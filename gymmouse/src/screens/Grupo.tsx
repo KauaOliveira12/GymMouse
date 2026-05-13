@@ -1,131 +1,256 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, FlatList, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
+import { API_URL } from '../config/api';
 import { styles } from './styles';
 
-// Dados simulados baseados no protótipo de alta fidelidade
-const MOCK_CHECKINS = [
-  { id: '1', nome: 'Carlos Silva', tempo: 'Há 2 horas', titulo: 'Treino de Peito e Tríceps', desc: 'Sessão intensa hoje! 💪 Supino reto, inclinado e paralelas.', likes: 12, comments: 3 },
-  { id: '2', nome: 'Ana Paula', tempo: 'Há 5 horas', titulo: 'Cardio Concluído', desc: '10km na esteira para começar o dia.', likes: 8, comments: 1 },
-];
 
-const MOCK_RANKING = [
-  { id: '1', pos: '1', nome: 'Carlos Silva', pontos: 7, destaque: false },
-  { id: '2', pos: '2', nome: 'Ana Paula', pontos: 7, destaque: false },
-  { id: '3', pos: '3', nome: 'Você', pontos: 6, destaque: true }, // Destaque laranja no protótipo
-  { id: '4', pos: '4', nome: 'Pedro Santos', pontos: 5, destaque: false },
-];
+const GRUPOS_URL = `${API_URL}/api/grupos`;
 
-export default function Grupo() {
-  const navigation = useNavigation<any>();
-  // Estado que controla se estamos na aba de "checkins" ou "ranking"
-  const [abaAtiva, setAbaAtiva] = useState('checkins');
+export default function Home() {
+    const navigation = useNavigation<any>();
 
-  // Desenha um post de foto
-  const renderCheckin = ({ item }: any) => (
-    <View style={styles.postCard}>
-      <View style={styles.postHeader}>
-        <View style={styles.postAvatar}>
-          <Text style={{ color: '#FFF', fontWeight: 'bold' }}>{item.nome.substring(0, 2).toUpperCase()}</Text>
-        </View>
-        <View>
-          <Text style={{ fontWeight: 'bold', color: '#0B2046' }}>{item.nome}</Text>
-          <Text style={{ color: '#999', fontSize: 12 }}>{item.tempo}</Text>
-        </View>
-      </View>
-      
-      {/* Placeholder simulando a foto do check-in */}
-      <View style={styles.postImagePlaceholder} />
-      
-      <Text style={styles.postTitle}>{item.titulo}</Text>
-      <Text style={styles.postDesc}>{item.desc}</Text>
-      
-      <View style={styles.postActions}>
-        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Feather name="heart" size={18} color="#666" style={{ marginRight: 5 }} />
-          <Text style={{ color: '#666' }}>{item.likes}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Feather name="message-square" size={18} color="#666" style={{ marginRight: 5 }} />
-          <Text style={{ color: '#666' }}>{item.comments}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    // Começa com uma lista vazia
+    const [grupos, setGrupos] = useState<any[]>([]);
+    const [carregando, setCarregando] = useState(true);
 
-  // Desenha uma linha do ranking
-  const renderRanking = ({ item }: any) => (
-    <View style={[styles.rankCard, item.destaque && styles.rankCardDestaque]}>
-      <Text style={styles.rankPos}>{item.pos}</Text>
-      <View style={[styles.postAvatar, { backgroundColor: item.destaque ? '#FF8C00' : '#E0E0E0' }]}>
-         <Text style={{ color: item.destaque ? '#FFF' : '#333', fontWeight: 'bold' }}>
-           {item.nome.substring(0, 2).toUpperCase()}
-         </Text>
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontWeight: 'bold', color: item.destaque ? '#FF8C00' : '#0B2046', fontSize: 16 }}>{item.nome}</Text>
-        <Text style={{ color: '#666' }}>{item.pontos} pontos</Text>
-      </View>
-      {item.destaque && (
-        <View style={{ backgroundColor: '#FF8C00', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 15 }}>
-          <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Você</Text>
-        </View>
-      )}
-    </View>
-  );
+    const [modalVisivel, setModalVisivel] = useState(false);
+    const [acaoModal, setAcaoModal] = useState('menu');
+    const [nomeGrupo, setNomeGrupo] = useState('');
+    const [descricaoGrupo, setDescricaoGrupo] = useState('');
 
-  return (
-    <View style={styles.homeContainer}>
-      {/* Header Superior */}
-      <View style={styles.grupoHeaderTop}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={24} color="#FFF" />
-        </TouchableOpacity>
-        <Text style={styles.grupoHeaderTitle}>Guerreiros da Academia</Text>
-      </View>
+    // 1. CARREGAR OS GRUPOS DA API AO ABRIR A TELA (GET)
+    useEffect(() => {
+        carregarGrupos();
+    }, []);
 
-      {/* Capa do Grupo com informações */}
-      <View style={styles.grupoCover}>
-        <View style={{ flexDirection: 'row', gap: 15 }}>
-          <Text style={styles.grupoCoverText}>👥 24 membros</Text>
-          <Text style={styles.grupoCoverText}>📅 Desde Janeiro 2026</Text>
-        </View>
-      </View>
+    const carregarGrupos = async () => {
+        try {
+            const response = await fetch(GRUPOS_URL);
+            const data = await response.json();
 
-      {/* Sistema de Abas (Check-ins x Ranking) */}
-      <View style={styles.tabsContainer}>
-        <TouchableOpacity 
-          style={[styles.tab, abaAtiva === 'checkins' && styles.tabActive]}
-          onPress={() => setAbaAtiva('checkins')}
+            // Mapeia os dados do banco para o formato que a tela espera
+            const gruposFormatados = data.map((grupo: any) => ({
+                id: String(grupo.id),
+                nome: grupo.nome,
+                descricao: grupo.descricao,
+                membros: 1, // <- Fictício (falta no backend)
+                rank: 0,    // <- Fictício (falta no backend)
+                pontos: 0   // <- Fictício (falta no backend)
+            }));
+
+            setGrupos(gruposFormatados);
+        } catch (error) {
+            console.error("Erro ao buscar grupos:", error);
+            Alert.alert("Erro", "Não foi possível conectar ao servidor.");
+        } finally {
+            setCarregando(false);
+        }
+    };
+
+    const abrirModal = () => {
+        setAcaoModal('menu');
+        setModalVisivel(true);
+    };
+
+    // 2. CRIAR UM GRUPO NA API (POST)
+    const handleCriarGrupo = async () => {
+        if (nomeGrupo.trim() === '') return;
+
+        try {
+            const response = await fetch(GRUPOS_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nome: nomeGrupo,
+                    descricao: descricaoGrupo,
+                    // codigoAcesso: "..." (Você pode gerar um código aleatório aqui depois)
+                }),
+            });
+
+            const grupoSalvo = await response.json(); // Pega a resposta do Spring Boot
+
+            // Adiciona o grupo recém-criado na lista da tela
+            const novoGrupoFormatado = {
+                id: String(grupoSalvo.id),
+                nome: grupoSalvo.nome,
+                descricao: grupoSalvo.descricao,
+                membros: 1,
+                rank: 0,
+                pontos: 0,
+            };
+
+            setGrupos([...grupos, novoGrupoFormatado]);
+
+            // Limpa os campos e fecha
+            setNomeGrupo('');
+            setDescricaoGrupo('');
+            setModalVisivel(false);
+        } catch (error) {
+            console.error("Erro ao criar grupo:", error);
+            Alert.alert("Erro", "Não foi possível criar o grupo.");
+        }
+    };
+
+    // OBS: Como sua API ainda não tem a rota DELETE, essa função só tira da tela por enquanto
+    const handleSairGrupo = (idParaRemover: string) => {
+        const novaLista = grupos.filter(grupo => grupo.id !== idParaRemover);
+        setGrupos(novaLista);
+    };
+
+    const renderizarGrupo = ({ item }: any) => (
+        <TouchableOpacity
+            style={styles.groupCard}
+            onPress={() => navigation.navigate('Grupo', { grupo: item })}
         >
-          <Text style={[styles.tabText, abaAtiva === 'checkins' && styles.tabTextActive]}>Check-ins Hoje</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.tab, abaAtiva === 'ranking' && styles.tabActive]}
-          onPress={() => setAbaAtiva('ranking')}
-        >
-          <Text style={[styles.tabText, abaAtiva === 'ranking' && styles.tabTextActive]}>📉 Ranking</Text>
-        </TouchableOpacity>
-      </View>
+            <View style={[styles.groupCardImage, { backgroundColor: '#CCC' }]} />
 
-      {/* Renderização Condicional: Mostra a lista dependendo de qual aba está selecionada */}
-      {abaAtiva === 'checkins' ? (
-        <FlatList
-          data={MOCK_CHECKINS}
-          keyExtractor={item => item.id}
-          renderItem={renderCheckin}
-          contentContainerStyle={{ paddingBottom: 30 }}
-        />
-      ) : (
-        <FlatList
-          data={MOCK_RANKING}
-          keyExtractor={item => item.id}
-          renderItem={renderRanking}
-          contentContainerStyle={{ paddingBottom: 30, paddingTop: 10 }}
-        />
-      )}
-    </View>
-  );
+            <View style={styles.groupCardInfo}>
+                <Text style={styles.groupCardTitle}>{item.nome}</Text>
+                <View style={styles.groupCardRow}>
+                    <Text style={styles.groupCardText}>👥 {item.membros} membros</Text>
+                </View>
+                <View style={styles.groupCardRow}>
+                    <Text style={[styles.groupCardText, { color: '#FF8C00', fontWeight: 'bold' }]}>
+                        🏆 Rank #{item.rank} • {item.pontos} pts
+                    </Text>
+                </View>
+            </View>
+
+            <TouchableOpacity
+                style={styles.btnSair}
+                onPress={() => handleSairGrupo(item.id)}
+            >
+                <Feather name="log-out" size={24} color="#FF3B30" />
+            </TouchableOpacity>
+        </TouchableOpacity>
+    );
+
+    return (
+        <View style={styles.homeContainer}>
+
+            <View style={styles.header}>
+                <View style={styles.headerLogo}>
+                    <View style={styles.logoCircle}>
+                        <Text style={{ fontSize: 18 }}>🐭</Text>
+                    </View>
+                    <Text style={styles.headerTitle}>GymMouse</Text>
+                </View>
+
+                <View style={styles.headerIcons}>
+                    <TouchableOpacity><Feather name="moon" size={24} color="#FFF" style={styles.icon} /></TouchableOpacity>
+                    <TouchableOpacity><Feather name="user" size={24} color="#FFF" style={styles.icon} /></TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={() =>
+                            navigation.dispatch(
+                                CommonActions.reset({
+                                    index: 0,
+                                    routes: [{ name: 'Login' }],
+                                })
+                            )
+                        }
+                    >
+                        <Feather name="log-out" size={24} color="#FFF" style={styles.icon} />
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            <Text style={styles.pageTitle}>Meus Grupos</Text>
+
+            {/* 3. Mostra um indicador de carregamento enquanto busca os dados */}
+            {carregando ? (
+                <ActivityIndicator size="large" color="#FF8C00" style={{ marginTop: 50 }} />
+            ) : (
+                <FlatList
+                    data={grupos}
+                    keyExtractor={item => item.id}
+                    renderItem={renderizarGrupo}
+                    contentContainerStyle={{ paddingBottom: 100 }}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <Text style={{ textAlign: 'center', marginTop: 50, color: '#999' }}>
+                            Você ainda não está em nenhum grupo.
+                        </Text>
+                    }
+                />
+            )}
+
+            <TouchableOpacity style={styles.fab} onPress={abrirModal}>
+                <Feather name="plus" size={30} color="#FFF" />
+            </TouchableOpacity>
+
+            <Modal transparent visible={modalVisivel} animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+
+                        {acaoModal === 'menu' && (
+                            <>
+                                <View style={styles.modalHeader}>
+                                    <Text style={styles.modalTitle}>Escolha uma ação</Text>
+                                    <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setModalVisivel(false)}>
+                                        <Feather name="x" size={24} color="#999" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <TouchableOpacity style={styles.modalActionBtn} onPress={() => setAcaoModal('criar_grupo')}>
+                                    <Feather name="users" size={20} color="#0B2046" style={styles.modalActionIcon} />
+                                    <Text style={styles.modalActionText}>Criar Novo Grupo</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.modalActionBtn}>
+                                    <Feather name="plus" size={20} color="#0B2046" style={styles.modalActionIcon} />
+                                    <Text style={styles.modalActionText}>Participar de um Grupo</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.modalActionBtn}>
+                                    <Feather name="camera" size={20} color="#0B2046" style={styles.modalActionIcon} />
+                                    <Text style={styles.modalActionText}>Fazer Check-in</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+
+                        {acaoModal === 'criar_grupo' && (
+                            <>
+                                <View style={styles.modalHeader}>
+                                    <Text style={styles.modalTitle}>Criar Novo Grupo</Text>
+                                    <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setModalVisivel(false)}>
+                                        <Feather name="x" size={24} color="#999" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <Text style={styles.label}>Nome do Grupo</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Ex: Guerreiros da Academia"
+                                    value={nomeGrupo}
+                                    onChangeText={setNomeGrupo}
+                                />
+
+                                <Text style={styles.label}>Descrição</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Descrição do grupo"
+                                    value={descricaoGrupo}
+                                    onChangeText={setDescricaoGrupo}
+                                />
+
+                                <TouchableOpacity
+                                    style={styles.button}
+                                    onPress={handleCriarGrupo}
+                                >
+                                    <Text style={styles.buttonText}>Criar Grupo</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+
+                    </View>
+                </View>
+            </Modal>
+
+        </View>
+    );
 }
