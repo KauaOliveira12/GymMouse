@@ -14,6 +14,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { API_URL } from '../config/api';
+import { limparUsuarioSessao } from '../services/sessao';
 import { styles } from './styles';
 
 const GRUPOS_URL = `${API_URL}/api/grupos`;
@@ -29,11 +30,32 @@ interface Grupo {
   imagem?: string;
 }
 
+const formatarGrupoEntrada = (entrada: any): Grupo | null => {
+  const id = entrada?.grupo?.id ?? entrada?.grupoId ?? entrada?.id;
+  const nome = entrada?.grupo?.nome ?? entrada?.nomeGrupo ?? entrada?.nome;
+  if (id == null) return null;
+
+  return {
+    id: String(id),
+    nome: nome != null ? String(nome) : 'Grupo',
+    descricao: entrada?.grupo?.descricao ?? entrada?.descricao ?? '',
+    membros: typeof entrada?.grupo?.membros === 'number' ? entrada.grupo.membros : 1,
+    rank: 0,
+    pontos: 0,
+    imagem: entrada?.grupo?.imagem ?? entrada?.grupo?.imagemUrl,
+  };
+};
+
 const formatarGrupo = (grupo: any): Grupo => ({
   id: String(grupo.id),
   nome: grupo.nome ?? '',
   descricao: grupo.descricao ?? '',
-  membros: typeof grupo.membros === 'number' ? grupo.membros : 1,
+  membros:
+    typeof grupo.totalMembros === 'number'
+      ? grupo.totalMembros
+      : typeof grupo.membros === 'number'
+      ? grupo.membros
+      : 1,
   rank: typeof grupo.rank === 'number' ? grupo.rank : 0,
   pontos: typeof grupo.pontos === 'number' ? grupo.pontos : 0,
   imagem: grupo.imagem ?? grupo.imagemUrl,
@@ -223,13 +245,12 @@ export default function Home() {
         return;
       }
 
-      const grupoPayload =
-        dados && typeof dados === 'object' && dados.grupo != null ? dados.grupo : dados;
+      const grupoPayload = dados && typeof dados === 'object' ? formatarGrupoEntrada(dados) : null;
       fecharModal();
       await carregarGrupos();
 
-      if (grupoPayload && typeof grupoPayload === 'object' && grupoPayload.id != null) {
-        const g = formatarGrupo(grupoPayload);
+      if (grupoPayload) {
+        const g = grupoPayload;
         setTimeout(() => {
           navigation.navigate('Grupo', {
             id: g.id,
@@ -250,6 +271,11 @@ export default function Home() {
     } finally {
       setEntrando(false);
     }
+  };
+
+  const handleLogout = async () => {
+    await limparUsuarioSessao();
+    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
 
   const renderCard = ({ item }: { item: Grupo }) => (
@@ -317,6 +343,18 @@ export default function Home() {
           </View>
           <Text style={styles.headerTitle}>GymMouse</Text>
         </View>
+        <View style={styles.headerIcons}>
+          <TouchableOpacity
+            style={styles.btnSair}
+            onPress={() => navigation.navigate('Perfil', { usuario })}
+            accessibilityLabel="Perfil"
+          >
+            <Feather name="user" size={24} color="#FFF" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.btnSair} onPress={handleLogout} accessibilityLabel="Deslogar">
+            <Feather name="log-out" size={24} color="#FFF" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <Text style={styles.pageTitle}>Meus Grupos</Text>
@@ -367,7 +405,7 @@ export default function Home() {
                   style={styles.modalActionBtn}
                   onPress={() => {
                     fecharModal();
-                    setTimeout(() => navigation.navigate('Checkin', { id: 'geral' }), 150);
+                    setTimeout(() => Alert.alert('Check-in', 'Abra um grupo e toque na camera para fazer check-in.'), 150);
                   }}
                 >
                   <Feather name="camera" size={20} color="#333" />

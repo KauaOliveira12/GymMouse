@@ -172,7 +172,8 @@ export const styles = StyleSheet.create({
     marginLeft: 5 
   },
   btnSair: { 
-    padding: 5 
+    padding: 5,
+    marginLeft: 10,
   },
   fab: {
     position: 'absolute',

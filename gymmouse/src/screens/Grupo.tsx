@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   Pressable,
+  Image,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -31,7 +32,7 @@ function mapRankingLinha(raw: any, index: number, usuarioLogadoId: string | null
   const nome =
     raw.nomeUsuario ?? raw.nome ?? raw.usuarioNome ?? raw.usuario?.nome ?? 'Participante';
   const pos = raw.posicao ?? raw.pos ?? raw.rank ?? raw.colocacao ?? index + 1;
-  const pontos = Number(raw.pontos ?? raw.pontuacao ?? raw.score ?? 0);
+  const pontos = Number(raw.pontosDesdeEntrada ?? raw.pontos ?? raw.pontuacao ?? raw.score ?? 0);
   const destaque =
     usuarioLogadoId != null && uid != null && String(uid) === String(usuarioLogadoId);
 
@@ -80,12 +81,19 @@ export default function Grupo() {
   const [checkinsLocais, setCheckinsLocais] = useState<any[]>([]);
   const [saindo, setSaindo] = useState(false);
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+  const [curtindoId, setCurtindoId] = useState<string | null>(null);
 
   const [menuVisivel, setMenuVisivel] = useState(false);
   const [confirmarSairVisivel, setConfirmarSairVisivel] = useState(false);
   const [editarVisivel, setEditarVisivel] = useState(false);
+  const [comentariosVisivel, setComentariosVisivel] = useState(false);
   const [nomeEdicao, setNomeEdicao] = useState('');
   const [descricaoEdicao, setDescricaoEdicao] = useState('');
+  const [checkinSelecionado, setCheckinSelecionado] = useState<any>(null);
+  const [comentarios, setComentarios] = useState<any[]>([]);
+  const [textoComentario, setTextoComentario] = useState('');
+  const [carregandoComentarios, setCarregandoComentarios] = useState(false);
+  const [enviandoComentario, setEnviandoComentario] = useState(false);
 
   const grupoIdNumerico = grupoId !== 'geral' && !Number.isNaN(Number(grupoId));
   const podeUsarApi = usuarioLogadoId != null && grupoIdNumerico;
@@ -101,8 +109,9 @@ export default function Grupo() {
     grupoApi?.codigoAcesso != null ? String(grupoApi.codigoAcesso) : '';
 
   const membrosExibicao = (() => {
-    if (grupoApi?.membros != null) return Number(grupoApi.membros);
     if (grupoApi?.totalMembros != null) return Number(grupoApi.totalMembros);
+    if (grupoApi?.membros != null) return Number(grupoApi.membros);
+    if (!carregandoApi && rankingApi.length > 0) return rankingApi.length;
     if (params.membros != null) return Number(params.membros);
     return Math.max(rankingApi.length, 1);
   })();
@@ -243,11 +252,19 @@ export default function Grupo() {
     try {
       const urlGrupo = `${API_URL}/api/grupos/${grupoId}`;
       const urlRanking = `${API_URL}/api/grupos/${grupoId}/ranking`;
+      const urlCheckins = `${API_URL}/api/grupos/${grupoId}/checkins${
+        usuarioLogadoId ? `?usuarioId=${usuarioLogadoId}` : ''
+      }`;
 
-      const [resGrupo, resRanking] = await Promise.all([fetch(urlGrupo), fetch(urlRanking)]);
+      const [resGrupo, resRanking, resCheckins] = await Promise.all([
+        fetch(urlGrupo),
+        fetch(urlRanking),
+        fetch(urlCheckins),
+      ]);
 
       const dadosGrupo = await lerResposta(resGrupo);
       const dadosRanking = await lerResposta(resRanking);
+      const dadosCheckins = await lerResposta(resCheckins);
 
       if (!resGrupo.ok) {
         const msg =
@@ -269,11 +286,20 @@ export default function Grupo() {
       } else {
         setRankingApi([]);
       }
+
+      if (resCheckins.ok && Array.isArray(dadosCheckins)) {
+        setCheckinsLocais(dadosCheckins);
+      } else {
+        const posts = POSTS_GLOBAIS.filter((p) => String(p.grupoId) === String(grupoId));
+        setCheckinsLocais(posts);
+      }
     } catch (e) {
       console.log(e);
       Alert.alert('Conexao', 'Falha ao buscar dados do grupo.');
       setGrupoApi(null);
       setRankingApi([]);
+      const posts = POSTS_GLOBAIS.filter((p) => String(p.grupoId) === String(grupoId));
+      setCheckinsLocais(posts);
     } finally {
       setCarregandoApi(false);
     }
@@ -286,8 +312,6 @@ export default function Grupo() {
       const run = async () => {
         await carregarDoServidor();
         if (!ativo) return;
-        const posts = POSTS_GLOBAIS.filter((p) => String(p.grupoId) === String(grupoId));
-        setCheckinsLocais(posts);
       };
 
       void run();
@@ -297,9 +321,110 @@ export default function Grupo() {
     }, [carregarDoServidor, grupoId])
   );
 
+  const atualizarCheckinNaLista = (checkinAtualizado: any) => {
+    if (!checkinAtualizado || checkinAtualizado.id == null) return;
+    setCheckinsLocais((atuais) =>
+      atuais.map((item) => (String(item.id) === String(checkinAtualizado.id) ? { ...item, ...checkinAtualizado } : item))
+    );
+    setCheckinSelecionado((atual: any) =>
+      atual && String(atual.id) === String(checkinAtualizado.id) ? { ...atual, ...checkinAtualizado } : atual
+    );
+  };
+
+  const handleCurtir = async (item: any) => {
+    if (!podeUsarApi) {
+      Alert.alert('Sessao', 'Faca login novamente para curtir.');
+      return;
+    }
+    const checkinId = item?.id;
+    if (checkinId == null || curtindoId === String(checkinId)) return;
+
+    setCurtindoId(String(checkinId));
+    try {
+      const resposta = await fetch(`${API_URL}/api/checkins/${checkinId}/curtidas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuarioId: Number(usuarioLogadoId) }),
+      });
+      const dados = await lerResposta(resposta);
+
+      if (!resposta.ok) {
+        Alert.alert('Erro', `Nao foi possivel atualizar a curtida (${resposta.status}).`);
+        return;
+      }
+      atualizarCheckinNaLista(dados);
+    } catch (e) {
+      console.log(e);
+      Alert.alert('Conexao', 'Falha ao curtir o check-in.');
+    } finally {
+      setCurtindoId(null);
+    }
+  };
+
+  const abrirComentarios = async (item: any) => {
+    setCheckinSelecionado(item);
+    setComentariosVisivel(true);
+    setComentarios([]);
+    setTextoComentario('');
+    setCarregandoComentarios(true);
+
+    try {
+      const resposta = await fetch(`${API_URL}/api/checkins/${item.id}/comentarios`);
+      const dados = await lerResposta(resposta);
+      if (resposta.ok && Array.isArray(dados)) {
+        setComentarios(dados);
+      } else {
+        setComentarios([]);
+      }
+    } catch (e) {
+      console.log(e);
+      Alert.alert('Conexao', 'Falha ao carregar comentarios.');
+    } finally {
+      setCarregandoComentarios(false);
+    }
+  };
+
+  const enviarComentario = async () => {
+    const texto = textoComentario.trim();
+    if (!podeUsarApi || !checkinSelecionado?.id) {
+      Alert.alert('Sessao', 'Faca login novamente para comentar.');
+      return;
+    }
+    if (!texto) {
+      Alert.alert('Comentario', 'Digite uma mensagem.');
+      return;
+    }
+
+    setEnviandoComentario(true);
+    try {
+      const resposta = await fetch(`${API_URL}/api/checkins/${checkinSelecionado.id}/comentarios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuarioId: Number(usuarioLogadoId), texto }),
+      });
+      const dados = await lerResposta(resposta);
+
+      if (!resposta.ok) {
+        Alert.alert('Erro', `Nao foi possivel comentar (${resposta.status}).`);
+        return;
+      }
+
+      setComentarios((atuais) => [...atuais, dados]);
+      setTextoComentario('');
+      const novoTotal = Number(checkinSelecionado.comments ?? 0) + 1;
+      atualizarCheckinNaLista({ ...checkinSelecionado, comments: novoTotal });
+    } catch (e) {
+      console.log(e);
+      Alert.alert('Conexao', 'Falha ao enviar comentario.');
+    } finally {
+      setEnviandoComentario(false);
+    }
+  };
+
   const renderCheckin = ({ item }: any) => {
     const nome = item.nome ?? 'Usuario';
     const iniciais = nome.length >= 2 ? nome.substring(0, 2).toUpperCase() : '?';
+    const curtido = Boolean(item.curtido);
     return (
       <View style={styles.postCard}>
         <View style={styles.postHeader}>
@@ -314,14 +439,21 @@ export default function Grupo() {
           </View>
         </View>
 
-        <View
-          style={[
-            styles.postImagePlaceholder,
-            { backgroundColor: '#F9F9F9', height: 120, justifyContent: 'center', alignItems: 'center' },
-          ]}
-        >
-          <Feather name="image" size={32} color="#DDD" />
-        </View>
+        {item.imagem ? (
+          <Image
+            source={{ uri: item.imagem }}
+            style={[styles.postImagePlaceholder, { height: 180, backgroundColor: '#F9F9F9' }]}
+          />
+        ) : (
+          <View
+            style={[
+              styles.postImagePlaceholder,
+              { backgroundColor: '#F9F9F9', height: 120, justifyContent: 'center', alignItems: 'center' },
+            ]}
+          >
+            <Feather name="image" size={32} color="#DDD" />
+          </View>
+        )}
 
         <View style={{ padding: 15 }}>
           <Text style={styles.postTitle}>{item.titulo ?? ''}</Text>
@@ -329,11 +461,15 @@ export default function Grupo() {
         </View>
 
         <View style={styles.postActions}>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginRight: 20 }}>
-            <Feather name="heart" size={18} color="#666" />
-            <Text style={{ color: '#666', marginLeft: 5 }}>{item.likes ?? 0}</Text>
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', marginRight: 20, opacity: curtindoId === String(item.id) ? 0.6 : 1 }}
+            onPress={() => void handleCurtir(item)}
+            disabled={curtindoId === String(item.id)}
+          >
+            <Feather name="heart" size={18} color={curtido ? '#FF3B30' : '#666'} />
+            <Text style={{ color: curtido ? '#FF3B30' : '#666', marginLeft: 5 }}>{item.likes ?? 0}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => void abrirComentarios(item)}>
             <Feather name="message-circle" size={18} color="#666" />
             <Text style={{ color: '#666', marginLeft: 5 }}>{item.comments ?? 0}</Text>
           </TouchableOpacity>
@@ -387,7 +523,7 @@ export default function Grupo() {
           </Pressable>
         )}
         <TouchableOpacity
-          onPress={() => navigation.navigate('Checkin', { id: grupoId })}
+          onPress={() => navigation.navigate('Checkin', { id: grupoId, usuarioId: usuarioLogadoId })}
           hitSlop={{ top: 12, bottom: 12, left: 8 }}
           style={{ padding: 6 }}
         >
@@ -455,7 +591,7 @@ export default function Grupo() {
               <View style={{ alignItems: 'center', marginTop: 48, paddingHorizontal: 20 }}>
                 <Feather name="edit-3" size={40} color="#DDD" />
                 <Text style={{ color: '#AAA', fontSize: 14, marginTop: 12, textAlign: 'center' }}>
-                  Check-ins ainda nao vinculados ao banco. Use a camera no topo ou integre uma rota na API.
+                  Nenhum check-in neste grupo ainda.
                 </Text>
               </View>
             }
@@ -479,6 +615,84 @@ export default function Grupo() {
           />
         )}
       </View>
+
+      <Modal transparent visible={comentariosVisivel} animationType="slide" onRequestClose={() => setComentariosVisivel(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => !enviandoComentario && setComentariosVisivel(false)}>
+          <Pressable style={[styles.modalContainer, { maxHeight: '82%' }]} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Comentarios</Text>
+              <TouchableOpacity onPress={() => !enviandoComentario && setComentariosVisivel(false)}>
+                <Feather name="x" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            {checkinSelecionado && (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={{ color: '#0B2046', fontWeight: 'bold' }}>{checkinSelecionado.titulo}</Text>
+                <Text style={{ color: '#666', fontSize: 13, marginTop: 4 }} numberOfLines={2}>
+                  {checkinSelecionado.desc}
+                </Text>
+              </View>
+            )}
+
+            {carregandoComentarios ? (
+              <ActivityIndicator color="#FF8C00" style={{ marginVertical: 24 }} />
+            ) : (
+              <FlatList
+                data={comentarios}
+                keyExtractor={(item) => String(item.id)}
+                style={{ maxHeight: 260 }}
+                keyboardShouldPersistTaps="handled"
+                ListEmptyComponent={
+                  <Text style={{ color: '#999', textAlign: 'center', marginVertical: 24 }}>
+                    Nenhum comentario ainda.
+                  </Text>
+                }
+                renderItem={({ item }) => {
+                  const nome = item.nome ?? 'Usuario';
+                  const iniciais = nome.length >= 2 ? nome.substring(0, 2).toUpperCase() : '?';
+                  return (
+                    <View style={{ flexDirection: 'row', marginBottom: 14 }}>
+                      <View style={[styles.postAvatar, { width: 34, height: 34, marginRight: 10 }]}>
+                        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>{iniciais}</Text>
+                      </View>
+                      <View style={{ flex: 1, backgroundColor: '#F5F5F5', borderRadius: 8, padding: 10 }}>
+                        <Text style={{ color: '#0B2046', fontWeight: 'bold', marginBottom: 4 }}>{nome}</Text>
+                        <Text style={{ color: '#333', lineHeight: 20 }}>{item.texto}</Text>
+                      </View>
+                    </View>
+                  );
+                }}
+              />
+            )}
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+              <TextInput
+                style={[styles.input, { flex: 1, marginBottom: 0, marginRight: 10 }]}
+                value={textoComentario}
+                onChangeText={setTextoComentario}
+                placeholder="Escreva um comentario"
+                editable={!enviandoComentario}
+              />
+              <TouchableOpacity
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: 8,
+                  backgroundColor: '#FF8C00',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: enviandoComentario ? 0.6 : 1,
+                }}
+                onPress={() => void enviarComentario()}
+                disabled={enviandoComentario}
+              >
+                <Feather name="send" size={20} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal transparent visible={menuVisivel} animationType="fade" onRequestClose={() => setMenuVisivel(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setMenuVisivel(false)}>
