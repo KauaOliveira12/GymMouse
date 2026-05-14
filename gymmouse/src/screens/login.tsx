@@ -1,119 +1,109 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import { API_URL } from '../config/api';
 import { styles } from './styles';
 
 export default function Login() {
-    const navigation = useNavigation<any>();
-    const [email, setEmail] = useState('');
-    const [senha, setSenha] = useState('');
-    const [erroLogin, setErroLogin] = useState('');
+  const navigation = useNavigation<any>();
 
-    const handleLogin = async () => {
-        if (!email || !senha) {
-            const mensagem = 'Preencha o e-mail e a senha.';
-            setErroLogin(mensagem);
-            Alert.alert('Atencao', mensagem);
-            return;
-        }
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [carregando, setCarregando] = useState(false);
 
-        setErroLogin('');
+  const handleEntrar = async () => {
+    if (!email.trim() || !senha) {
+      Alert.alert('Atencao', 'Preencha e-mail e senha.');
+      return;
+    }
 
+    setCarregando(true);
+    try {
+      const resposta = await fetch(`${API_URL}/api/usuarios/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), senha }),
+      });
+
+      const texto = await resposta.text();
+      let dados: any = null;
+      if (texto) {
         try {
-            const urlDoServidor = `${API_URL}/api/usuarios/login`;
-
-            const resposta = await fetch(urlDoServidor, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: email.trim(),
-                    senha: senha,
-                }),
-            });
-
-            if (!resposta.ok) {
-                const mensagem = 'E-mail ou senha incorretos.';
-                setErroLogin(mensagem);
-                Alert.alert('Erro', mensagem);
-                return;
-            }
-
-            const textoResposta = await resposta.text();
-            const dadosDoUsuario = textoResposta ? JSON.parse(textoResposta) : null;
-
-            if (!dadosDoUsuario || dadosDoUsuario.erro || dadosDoUsuario.error) {
-                const mensagem = dadosDoUsuario?.mensagem || dadosDoUsuario?.message || 'E-mail ou senha incorretos.';
-                setErroLogin(mensagem);
-                Alert.alert('Erro', mensagem);
-                return;
-            }
-
-            Alert.alert('Sucesso', `Bem-vindo de volta, ${dadosDoUsuario.nome || 'usuario'}!`);
-            navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: 'Home' }],
-                })
-            );
-        } catch (error) {
-            const mensagem = 'Nao foi possivel conectar na API. No PC, confira CORS no Spring Boot e se a API esta em localhost:8080.';
-            setErroLogin(mensagem);
-            Alert.alert('Erro de Rede', mensagem);
-            console.log(error);
+          dados = JSON.parse(texto);
+        } catch {
+          dados = texto;
         }
-    };
+      }
 
-    return (
-        <View style={styles.container}>
-            <View style={styles.card}>
-                <View style={styles.logoContainer}>
-                    <Text style={{ fontSize: 40 }}>ratinho</Text>
-                </View>
+      if (!resposta.ok) {
+        const msg =
+          typeof dados === 'object' && dados !== null
+            ? dados.mensagem || dados.message || dados.error
+            : dados;
+        Alert.alert('Erro', String(msg || 'E-mail ou senha incorretos.'));
+        return;
+      }
 
-                <Text style={styles.title}>GymMouse</Text>
-                <Text style={styles.subtitle}>Mantenha-se focado em seus exercicios</Text>
+      if (!dados || typeof dados !== 'object' || dados.erro || dados.error) {
+        const msg = dados?.mensagem || dados?.message || 'E-mail ou senha incorretos.';
+        Alert.alert('Erro', String(msg));
+        return;
+      }
 
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                    style={styles.input}
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="Digite o seu@email"
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                />
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Home', params: { usuario: dados } }],
+        })
+      );
+    } catch (e) {
+      console.log(e);
+      Alert.alert('Conexao', 'Nao foi possivel conectar. Verifique API_URL em src/config/api.ts.');
+    } finally {
+      setCarregando(false);
+    }
+  };
 
-                <Text style={styles.label}>Senha</Text>
-                <TextInput
-                    style={styles.input}
-                    value={senha}
-                    onChangeText={setSenha}
-                    placeholder="Digite sua senha"
-                    secureTextEntry={true}
-                />
-
-                {erroLogin !== '' && (
-                    <Text style={styles.errorText}>
-                        {erroLogin}
-                    </Text>
-                )}
-
-                <TouchableOpacity style={styles.button} onPress={handleLogin}>
-                    <Text style={styles.buttonText}>Entrar</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={{ marginTop: 20, alignItems: 'center' }}
-                    onPress={() => navigation.navigate('Cadastro')}
-                >
-                    <Text style={styles.linkText}>
-                        Nao tem conta? Cadastre-se agora!
-                    </Text>
-                </TouchableOpacity>
-            </View>
+  return (
+    <View style={styles.container}>
+      <View style={styles.card}>
+        <View style={styles.logoContainer}>
+          <Text style={{ fontSize: 40 }}>🐭</Text>
         </View>
-    );
+        <Text style={styles.title}>GymMouse</Text>
+        <Text style={styles.subtitle}>Mantenha-se focado em seus exercicios</Text>
+
+        <Text style={styles.label}>Email</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="seu@email.com"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+
+        <Text style={styles.label}>Senha</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="********"
+          value={senha}
+          onChangeText={(texto) => setSenha(texto.replace(/\s/g, ''))}
+          secureTextEntry
+        />
+
+        <TouchableOpacity style={styles.button} onPress={handleEntrar} disabled={carregando}>
+          {carregando ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <Text style={styles.buttonText}>Entrar</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => navigation.navigate('Cadastro')}>
+          <Text style={styles.linkText}>Nao tem conta? Cadastre-se</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 }

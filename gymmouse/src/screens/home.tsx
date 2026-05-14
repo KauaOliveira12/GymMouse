@@ -1,318 +1,428 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  Modal,
+  Alert,
+  TextInput,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { CommonActions, useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { API_URL } from '../config/api';
 import { styles } from './styles';
 
 const GRUPOS_URL = `${API_URL}/api/grupos`;
+const GRUPOS_ENTRAR_URL = `${API_URL}/api/grupos/entrar`;
 
-const formatarGrupo = (grupo: any) => ({
-    id: String(grupo.id),
-    nome: grupo.nome,
-    descricao: grupo.descricao || '',
-    membros: grupo.membros || 1,
-    rank: grupo.rank || 0,
-    pontos: grupo.pontos || 0,
+interface Grupo {
+  id: string;
+  nome: string;
+  membros: number;
+  rank: number;
+  pontos: number;
+  descricao?: string;
+  imagem?: string;
+}
+
+const formatarGrupo = (grupo: any): Grupo => ({
+  id: String(grupo.id),
+  nome: grupo.nome ?? '',
+  descricao: grupo.descricao ?? '',
+  membros: typeof grupo.membros === 'number' ? grupo.membros : 1,
+  rank: typeof grupo.rank === 'number' ? grupo.rank : 0,
+  pontos: typeof grupo.pontos === 'number' ? grupo.pontos : 0,
+  imagem: grupo.imagem ?? grupo.imagemUrl,
 });
 
 const lerResposta = async (resposta: Response) => {
-    const textoResposta = await resposta.text();
-
-    if (!textoResposta) {
-        return null;
-    }
-
-    try {
-        return JSON.parse(textoResposta);
-    } catch {
-        return textoResposta;
-    }
+  const texto = await resposta.text();
+  if (!texto) return null;
+  try {
+    return JSON.parse(texto);
+  } catch {
+    return texto;
+  }
 };
 
-const fetchComTimeout = async (url: string, options?: RequestInit, timeoutMs = 10000) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-        return await fetch(url, {
-            ...options,
-            signal: controller.signal,
-        });
-    } finally {
-        clearTimeout(timeoutId);
-    }
+const fetchComTimeout = async (url: string, options?: RequestInit, timeoutMs = 12000) => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
 };
 
 export default function Home() {
-    const navigation = useNavigation<any>();
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const usuario = route.params?.usuario as { id?: number | string } | undefined;
 
-    const [grupos, setGrupos] = useState<any[]>([]);
-    const [carregando, setCarregando] = useState(true);
-    const [salvando, setSalvando] = useState(false);
+  const [grupos, setGrupos] = useState<Grupo[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [entrando, setEntrando] = useState(false);
 
-    const [modalVisivel, setModalVisivel] = useState(false);
-    const [acaoModal, setAcaoModal] = useState('menu');
+  const [modalVisivel, setModalVisivel] = useState(false);
+  const [telaModal, setTelaModal] = useState<'opcoes' | 'criar' | 'entrar'>('opcoes');
+  const [nomeNovoGrupo, setNomeNovoGrupo] = useState('');
+  const [descricaoNovoGrupo, setDescricaoNovoGrupo] = useState('');
+  const [codigoEntrada, setCodigoEntrada] = useState('');
 
-    const [nomeGrupo, setNomeGrupo] = useState('');
-    const [descricaoGrupo, setDescricaoGrupo] = useState('');
-    const [erroGrupo, setErroGrupo] = useState('');
+  const usuarioId = usuario?.id != null && String(usuario.id).trim() !== '' ? String(usuario.id) : null;
 
-    const carregarGrupos = useCallback(async () => {
-        setCarregando(true);
+  const carregarGrupos = useCallback(async () => {
+    if (!usuarioId) {
+      setGrupos([]);
+      setCarregando(false);
+      setRefreshing(false);
+      return;
+    }
 
-        try {
-            const resposta = await fetchComTimeout(GRUPOS_URL);
-            const dados = await lerResposta(resposta);
+    try {
+      const url = `${GRUPOS_URL}?doUsuario=true`;
+      const resposta = await fetchComTimeout(url, {
+        headers: { 'X-Usuario-Id': usuarioId },
+      });
+      const dados = await lerResposta(resposta);
 
-            if (!resposta.ok) {
-                const mensagemServidor =
-                    typeof dados === 'object' && dados !== null
-                        ? dados.mensagem || dados.message || dados.error
-                        : dados;
-                const mensagem = mensagemServidor || `Erro ao buscar grupos. Status: ${resposta.status}`;
+      if (!resposta.ok) {
+        const msg =
+          typeof dados === 'object' && dados !== null
+            ? dados.mensagem || dados.message || dados.error
+            : dados;
+        Alert.alert('Erro', String(msg || `Nao foi possivel carregar grupos (${resposta.status}).`));
+        setGrupos([]);
+        return;
+      }
 
-                Alert.alert('Erro', String(mensagem));
-                return;
-            }
+      const lista = Array.isArray(dados) ? dados : [];
+      setGrupos(lista.map(formatarGrupo));
+    } catch (e) {
+      console.log(e);
+      Alert.alert('Conexao', 'Nao foi possivel conectar a API. Confira o IP em src/config/api.ts e se o servidor esta no ar.');
+      setGrupos([]);
+    } finally {
+      setCarregando(false);
+      setRefreshing(false);
+    }
+  }, [usuarioId]);
 
-            const lista = Array.isArray(dados) ? dados : [];
-            setGrupos(lista.map(formatarGrupo));
-        } catch (error) {
-            Alert.alert('Erro de Conexao', 'Nao foi possivel conectar ao servidor para carregar os grupos.');
-            console.log(error);
-        } finally {
-            setCarregando(false);
-        }
-    }, []);
+  useFocusEffect(
+    useCallback(() => {
+      setCarregando(true);
+      carregarGrupos();
+    }, [carregarGrupos])
+  );
 
-    useEffect(() => {
-        carregarGrupos();
-    }, [carregarGrupos]);
+  const onRefresh = () => {
+    setRefreshing(true);
+    carregarGrupos();
+  };
 
-    const abrirModal = () => {
-        setAcaoModal('menu');
-        setModalVisivel(true);
-    };
+  const handleCriarGrupo = async () => {
+    if (nomeNovoGrupo.trim() === '') {
+      Alert.alert('Atencao', 'O nome do grupo e obrigatorio.');
+      return;
+    }
+    if (!usuarioId) {
+      Alert.alert('Sessao', 'Faca login novamente.');
+      return;
+    }
 
-    const handleCriarGrupo = async () => {
-        if (nomeGrupo.trim() === '') {
-            const mensagem = 'Digite o nome do grupo.';
-            setErroGrupo(mensagem);
-            Alert.alert('Atencao', mensagem);
-            return;
-        }
+    setSalvando(true);
+    try {
+      const nome = nomeNovoGrupo.trim();
+      const descricao = descricaoNovoGrupo.trim();
+      const resposta = await fetchComTimeout(GRUPOS_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Usuario-Id': usuarioId,
+        },
+        body: JSON.stringify({ nome, descricao }),
+      });
+      const dados = await lerResposta(resposta);
 
-        setErroGrupo('');
-        setSalvando(true);
+      if (!resposta.ok) {
+        const msg =
+          typeof dados === 'object' && dados !== null
+            ? dados.mensagem || dados.message || dados.error
+            : dados;
+        Alert.alert('Erro', String(msg || `Nao foi possivel criar o grupo (${resposta.status}).`));
+        return;
+      }
 
-        try {
-            const resposta = await fetchComTimeout(GRUPOS_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    nome: nomeGrupo.trim(),
-                    descricao: descricaoGrupo.trim(),
-                }),
-            });
+      const g = dados && typeof dados === 'object' ? formatarGrupo(dados) : null;
+      fecharModal();
+      await carregarGrupos();
 
-            const dados = await lerResposta(resposta);
+      if (g) {
+        setTimeout(() => {
+          navigation.navigate('Grupo', {
+            id: g.id,
+            nome: g.nome,
+            membros: g.membros,
+            pontos: g.pontos,
+            descricao: g.descricao,
+            usuarioId: usuarioId,
+            usuario,
+          });
+        }, 150);
+      } else {
+        Alert.alert('Sucesso', 'Grupo criado.');
+      }
+    } catch (e) {
+      console.log(e);
+      Alert.alert('Conexao', 'Falha ao criar grupo. Verifique a API.');
+    } finally {
+      setSalvando(false);
+    }
+  };
 
-            if (!resposta.ok) {
-                const mensagemServidor =
-                    typeof dados === 'object' && dados !== null
-                        ? dados.mensagem || dados.message || dados.error
-                        : dados;
-                const mensagem = mensagemServidor || `Servidor recusou o grupo. Status: ${resposta.status}`;
+  const handleEntrarGrupo = async () => {
+    const codigo = codigoEntrada.trim();
+    if (!codigo) {
+      Alert.alert('Atencao', 'Informe o codigo de acesso.');
+      return;
+    }
+    if (!usuarioId) {
+      Alert.alert('Sessao', 'Faca login novamente.');
+      return;
+    }
 
-                setErroGrupo(String(mensagem));
-                Alert.alert('Erro', String(mensagem));
-                return;
-            }
+    setEntrando(true);
+    try {
+      const resposta = await fetchComTimeout(GRUPOS_ENTRAR_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          usuarioId: Number(usuarioId),
+          codigoAcesso: codigo,
+        }),
+      });
+      const dados = await lerResposta(resposta);
 
-            if (!dados || typeof dados !== 'object') {
-                await carregarGrupos();
-            } else {
-                setGrupos((listaAtual) => [...listaAtual, formatarGrupo(dados)]);
-            }
+      if (resposta.status === 409) {
+        Alert.alert('Atencao', 'Voce ja participa deste grupo.');
+        return;
+      }
+      if (!resposta.ok) {
+        const msg =
+          typeof dados === 'object' && dados !== null
+            ? dados.mensagem || dados.message || dados.error
+            : dados;
+        Alert.alert('Erro', String(msg || `Codigo invalido ou erro (${resposta.status}).`));
+        return;
+      }
 
-            setNomeGrupo('');
-            setDescricaoGrupo('');
-            setModalVisivel(false);
-        } catch (error) {
-            const mensagem = 'Nao foi possivel criar o grupo. Confira se o Spring Boot esta rodando e se o IP esta correto.';
-            setErroGrupo(mensagem);
-            Alert.alert('Erro de Conexao', mensagem);
-            console.log(error);
-        } finally {
-            setSalvando(false);
-        }
-    };
+      const grupoPayload =
+        dados && typeof dados === 'object' && dados.grupo != null ? dados.grupo : dados;
+      fecharModal();
+      await carregarGrupos();
 
-    const handleSairGrupo = (idParaRemover: string) => {
-        const novaLista = grupos.filter(grupo => grupo.id !== idParaRemover);
-        setGrupos(novaLista);
-    };
+      if (grupoPayload && typeof grupoPayload === 'object' && grupoPayload.id != null) {
+        const g = formatarGrupo(grupoPayload);
+        setTimeout(() => {
+          navigation.navigate('Grupo', {
+            id: g.id,
+            nome: g.nome,
+            membros: g.membros,
+            pontos: g.pontos,
+            descricao: g.descricao,
+            usuarioId: usuarioId,
+            usuario,
+          });
+        }, 150);
+      } else {
+        Alert.alert('Sucesso', 'Voce entrou no grupo.');
+      }
+    } catch (e) {
+      console.log(e);
+      Alert.alert('Conexao', 'Falha ao entrar no grupo.');
+    } finally {
+      setEntrando(false);
+    }
+  };
 
-    const renderizarGrupo = ({ item }: any) => (
-        <TouchableOpacity
-            style={styles.groupCard}
-            onPress={() => navigation.navigate('Grupo', { grupo: item })}
-        >
-            <View style={[styles.groupCardImage, { backgroundColor: '#CCC' }]} />
+  const renderCard = ({ item }: { item: Grupo }) => (
+    <TouchableOpacity
+      style={styles.groupCard}
+      onPress={() =>
+        navigation.navigate('Grupo', {
+          id: item.id,
+          nome: item.nome,
+          membros: item.membros,
+          pontos: item.pontos,
+          descricao: item.descricao,
+          usuarioId: usuarioId,
+          usuario,
+        })
+      }
+    >
+      {item.imagem ? (
+        <Image source={{ uri: item.imagem }} style={styles.groupCardImage} />
+      ) : (
+        <View style={[styles.groupCardImage, { backgroundColor: '#DDD', justifyContent: 'center', alignItems: 'center' }]}>
+          <Text style={{ fontWeight: 'bold', color: '#666' }}>
+            {item.nome.length >= 2 ? item.nome.substring(0, 2).toUpperCase() : '?'}
+          </Text>
+        </View>
+      )}
 
-            <View style={styles.groupCardInfo}>
-                <Text style={styles.groupCardTitle}>{item.nome}</Text>
-                <View style={styles.groupCardRow}>
-                    <Text style={styles.groupCardText}>Membros: {item.membros}</Text>
-                </View>
-                <View style={styles.groupCardRow}>
-                    <Text style={[styles.groupCardText, { color: '#FF8C00', fontWeight: 'bold' }]}>
-                        Rank #{item.rank} - {item.pontos} pts
-                    </Text>
-                </View>
-            </View>
+      <View style={styles.groupCardInfo}>
+        <Text style={styles.groupCardTitle}>{item.nome}</Text>
+        <View style={styles.groupCardRow}>
+          <Feather name="users" size={14} color="#666" />
+          <Text style={styles.groupCardText}>{item.membros} membros</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
 
-            <TouchableOpacity
-                style={styles.btnSair}
-                onPress={() => handleSairGrupo(item.id)}
-            >
-                <Feather name="log-out" size={24} color="#FF3B30" />
-            </TouchableOpacity>
+  const fecharModal = () => {
+    setModalVisivel(false);
+    setTelaModal('opcoes');
+    setNomeNovoGrupo('');
+    setDescricaoNovoGrupo('');
+    setCodigoEntrada('');
+  };
 
-        </TouchableOpacity>
-    );
-
+  if (!usuarioId) {
     return (
-        <View style={styles.homeContainer}>
+      <View style={[styles.homeContainer, { justifyContent: 'center', padding: 24 }]}>
+        <Text style={{ textAlign: 'center', color: '#666', marginBottom: 16 }}>
+          Nenhum usuario na sessao. Entre com login na API para ver seus grupos.
+        </Text>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' }] })}>
+          <Text style={styles.buttonText}>Ir para login</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
-            <View style={styles.header}>
-                <View style={styles.headerLogo}>
-                    <View style={styles.logoCircle}>
-                        <Text style={{ fontSize: 18 }}>GM</Text>
-                    </View>
-                    <Text style={styles.headerTitle}>GymMouse</Text>
-                </View>
+  return (
+    <View style={styles.homeContainer}>
+      <View style={styles.header}>
+        <View style={styles.headerLogo}>
+          <View style={styles.logoCircle}>
+            <Text>🐭</Text>
+          </View>
+          <Text style={styles.headerTitle}>GymMouse</Text>
+        </View>
+      </View>
 
-                <View style={styles.headerIcons}>
-                    <TouchableOpacity><Feather name="moon" size={24} color="#FFF" style={styles.icon} /></TouchableOpacity>
-                    <TouchableOpacity><Feather name="user" size={24} color="#FFF" style={styles.icon} /></TouchableOpacity>
+      <Text style={styles.pageTitle}>Meus Grupos</Text>
 
-                    <TouchableOpacity
-                        onPress={() =>
-                            navigation.dispatch(
-                                CommonActions.reset({
-                                    index: 0,
-                                    routes: [{ name: 'Login' }],
-                                })
-                            )
-                        }
-                    >
-                        <Feather name="log-out" size={24} color="#FFF" style={styles.icon} />
-                    </TouchableOpacity>
-                </View>
+      {carregando ? (
+        <ActivityIndicator size="large" color="#FF8C00" style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={grupos}
+          keyExtractor={(item) => item.id}
+          renderItem={renderCard}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#FF8C00']} />}
+          ListEmptyComponent={
+            <Text style={{ textAlign: 'center', marginTop: 48, color: '#999', paddingHorizontal: 24 }}>
+              Nenhum grupo ainda. Crie um ou entre com um codigo de acesso.
+            </Text>
+          }
+        />
+      )}
+
+      <TouchableOpacity style={styles.fab} onPress={() => setModalVisivel(true)}>
+        <Feather name="plus" size={30} color="#FFF" />
+      </TouchableOpacity>
+
+      <Modal visible={modalVisivel} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {telaModal === 'opcoes' ? 'Acoes' : telaModal === 'criar' ? 'Novo Grupo' : 'Entrar no grupo'}
+              </Text>
+              <TouchableOpacity onPress={fecharModal}>
+                <Feather name="x" size={24} color="#666" />
+              </TouchableOpacity>
             </View>
 
-            <Text style={styles.pageTitle}>Meus Grupos</Text>
-
-            {carregando ? (
-                <ActivityIndicator size="large" color="#FF8C00" style={{ marginTop: 50 }} />
-            ) : (
-                <FlatList
-                    data={grupos}
-                    keyExtractor={item => item.id}
-                    renderItem={renderizarGrupo}
-                    contentContainerStyle={{ paddingBottom: 100 }}
-                    showsVerticalScrollIndicator={false}
-                    ListEmptyComponent={
-                        <Text style={{ textAlign: 'center', marginTop: 50, color: '#999' }}>
-                            Voce ainda nao esta em nenhum grupo.
-                        </Text>
-                    }
-                />
+            {telaModal === 'opcoes' && (
+              <View>
+                <TouchableOpacity style={styles.modalActionBtn} onPress={() => setTelaModal('criar')}>
+                  <Feather name="users" size={20} color="#333" />
+                  <Text style={styles.modalActionText}>Criar Novo Grupo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalActionBtn} onPress={() => setTelaModal('entrar')}>
+                  <Feather name="log-in" size={20} color="#333" />
+                  <Text style={styles.modalActionText}>Participar com codigo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalActionBtn}
+                  onPress={() => {
+                    fecharModal();
+                    setTimeout(() => navigation.navigate('Checkin', { id: 'geral' }), 150);
+                  }}
+                >
+                  <Feather name="camera" size={20} color="#333" />
+                  <Text style={styles.modalActionText}>Fazer Check-in</Text>
+                </TouchableOpacity>
+              </View>
             )}
 
-            <TouchableOpacity style={styles.fab} onPress={abrirModal}>
-                <Feather name="plus" size={30} color="#FFF" />
-            </TouchableOpacity>
+            {telaModal === 'criar' && (
+              <View>
+                <Text style={styles.label}>Nome do Grupo</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: Guerreiros da Academia"
+                  value={nomeNovoGrupo}
+                  onChangeText={setNomeNovoGrupo}
+                />
+                <Text style={styles.label}>Descricao (opcional)</Text>
+                <TextInput
+                  style={[styles.input, { height: 72, textAlignVertical: 'top' }]}
+                  placeholder="Descricao do grupo"
+                  value={descricaoNovoGrupo}
+                  onChangeText={setDescricaoNovoGrupo}
+                  multiline
+                />
+                <TouchableOpacity style={styles.button} onPress={handleCriarGrupo} disabled={salvando}>
+                  <Text style={styles.buttonText}>{salvando ? 'Salvando...' : 'Criar Grupo'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={{ marginTop: 12, alignItems: 'center' }} onPress={() => setTelaModal('opcoes')}>
+                  <Text style={styles.linkText}>Voltar</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
-            <Modal transparent visible={modalVisivel} animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-
-                        {acaoModal === 'menu' && (
-                            <>
-                                <View style={styles.modalHeader}>
-                                    <Text style={styles.modalTitle}>Escolha uma acao</Text>
-                                    <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setModalVisivel(false)}>
-                                        <Feather name="x" size={24} color="#999" />
-                                    </TouchableOpacity>
-                                </View>
-
-                                <TouchableOpacity style={styles.modalActionBtn} onPress={() => setAcaoModal('criar_grupo')}>
-                                    <Feather name="users" size={20} color="#0B2046" style={styles.modalActionIcon} />
-                                    <Text style={styles.modalActionText}>Criar Novo Grupo</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity style={styles.modalActionBtn}>
-                                    <Feather name="plus" size={20} color="#0B2046" style={styles.modalActionIcon} />
-                                    <Text style={styles.modalActionText}>Participar de um Grupo</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity style={styles.modalActionBtn}>
-                                    <Feather name="camera" size={20} color="#0B2046" style={styles.modalActionIcon} />
-                                    <Text style={styles.modalActionText}>Fazer Check-in</Text>
-                                </TouchableOpacity>
-                            </>
-                        )}
-
-                        {acaoModal === 'criar_grupo' && (
-                            <>
-                                <View style={styles.modalHeader}>
-                                    <Text style={styles.modalTitle}>Criar Novo Grupo</Text>
-                                    <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setModalVisivel(false)}>
-                                        <Feather name="x" size={24} color="#999" />
-                                    </TouchableOpacity>
-                                </View>
-
-                                <Text style={styles.label}>Nome do Grupo</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Ex: Guerreiros da Academia"
-                                    value={nomeGrupo}
-                                    onChangeText={setNomeGrupo}
-                                />
-
-                                <Text style={styles.label}>Descricao</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Descricao do grupo"
-                                    value={descricaoGrupo}
-                                    onChangeText={setDescricaoGrupo}
-                                />
-
-                                {erroGrupo !== '' && (
-                                    <Text style={styles.errorText}>
-                                        {erroGrupo}
-                                    </Text>
-                                )}
-
-                                <TouchableOpacity
-                                    style={styles.button}
-                                    onPress={handleCriarGrupo}
-                                    disabled={salvando}
-                                >
-                                    <Text style={styles.buttonText}>{salvando ? 'Criando...' : 'Criar Grupo'}</Text>
-                                </TouchableOpacity>
-                            </>
-                        )}
-
-                    </View>
-                </View>
-            </Modal>
-
+            {telaModal === 'entrar' && (
+              <View>
+                <Text style={styles.label}>Codigo de acesso</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Cole o codigo do grupo"
+                  value={codigoEntrada}
+                  onChangeText={setCodigoEntrada}
+                  autoCapitalize="characters"
+                />
+                <TouchableOpacity style={styles.button} onPress={handleEntrarGrupo} disabled={entrando}>
+                  <Text style={styles.buttonText}>{entrando ? 'Entrando...' : 'Entrar'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={{ marginTop: 12, alignItems: 'center' }} onPress={() => setTelaModal('opcoes')}>
+                  <Text style={styles.linkText}>Voltar</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         </View>
-    );
+      </Modal>
+    </View>
+  );
 }
