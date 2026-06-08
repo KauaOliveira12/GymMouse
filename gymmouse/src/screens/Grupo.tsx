@@ -92,6 +92,7 @@ export default function Grupo() {
   const [checkinSelecionado, setCheckinSelecionado] = useState<any>(null);
   const [comentarios, setComentarios] = useState<any[]>([]);
   const [textoComentario, setTextoComentario] = useState('');
+  const [comentarioRespondendo, setComentarioRespondendo] = useState<any>(null);
   const [carregandoComentarios, setCarregandoComentarios] = useState(false);
   const [enviandoComentario, setEnviandoComentario] = useState(false);
 
@@ -366,6 +367,7 @@ export default function Grupo() {
     setComentariosVisivel(true);
     setComentarios([]);
     setTextoComentario('');
+    setComentarioRespondendo(null);
     setCarregandoComentarios(true);
 
     try {
@@ -384,6 +386,25 @@ export default function Grupo() {
     }
   };
 
+  const adicionarRespostaAoComentario = (lista: any[], resposta: any): any[] =>
+    lista.map((comentario) => {
+      if (String(comentario.id) === String(resposta.comentarioPaiId)) {
+        return {
+          ...comentario,
+          respostas: [...(Array.isArray(comentario.respostas) ? comentario.respostas : []), resposta],
+        };
+      }
+
+      if (Array.isArray(comentario.respostas) && comentario.respostas.length > 0) {
+        return {
+          ...comentario,
+          respostas: adicionarRespostaAoComentario(comentario.respostas, resposta),
+        };
+      }
+
+      return comentario;
+    });
+
   const enviarComentario = async () => {
     const texto = textoComentario.trim();
     if (!podeUsarApi || !checkinSelecionado?.id) {
@@ -397,7 +418,11 @@ export default function Grupo() {
 
     setEnviandoComentario(true);
     try {
-      const resposta = await fetch(`${API_URL}/api/checkins/${checkinSelecionado.id}/comentarios`, {
+      const comentarioPaiId = comentarioRespondendo?.id;
+      const url = comentarioPaiId
+        ? `${API_URL}/api/checkins/${checkinSelecionado.id}/comentarios/${comentarioPaiId}/respostas`
+        : `${API_URL}/api/checkins/${checkinSelecionado.id}/comentarios`;
+      const resposta = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usuarioId: Number(usuarioLogadoId), texto }),
@@ -409,8 +434,11 @@ export default function Grupo() {
         return;
       }
 
-      setComentarios((atuais) => [...atuais, dados]);
+      setComentarios((atuais) =>
+        dados?.comentarioPaiId ? adicionarRespostaAoComentario(atuais, dados) : [...atuais, dados]
+      );
       setTextoComentario('');
+      setComentarioRespondendo(null);
       const novoTotal = Number(checkinSelecionado.comments ?? 0) + 1;
       atualizarCheckinNaLista({ ...checkinSelecionado, comments: novoTotal });
     } catch (e) {
@@ -419,6 +447,43 @@ export default function Grupo() {
     } finally {
       setEnviandoComentario(false);
     }
+  };
+
+  const renderComentario = (item: any, nivel = 0) => {
+    const nome = item.nome ?? 'Usuario';
+    const iniciais = nome.length >= 2 ? nome.substring(0, 2).toUpperCase() : '?';
+    const respostas = Array.isArray(item.respostas) ? item.respostas : [];
+    const indentacao = Math.min(nivel * 18, 54);
+
+    return (
+      <View style={{ marginLeft: indentacao, marginBottom: 14 }}>
+        <View style={{ flexDirection: 'row' }}>
+          <View style={[styles.postAvatar, { width: 34, height: 34, marginRight: 10 }]}>
+            <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>{iniciais}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ backgroundColor: '#F5F5F5', borderRadius: 8, padding: 10 }}>
+              <Text style={{ color: '#0B2046', fontWeight: 'bold', marginBottom: 4 }}>{nome}</Text>
+              <Text style={{ color: '#333', lineHeight: 20 }}>{item.texto}</Text>
+            </View>
+            <TouchableOpacity
+              style={{ alignSelf: 'flex-start', marginTop: 6, paddingVertical: 4 }}
+              onPress={() => {
+                setComentarioRespondendo(item);
+                setTextoComentario('');
+              }}
+            >
+              <Text style={{ color: '#FF8C00', fontWeight: '700', fontSize: 12 }}>Responder</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        {respostas.map((resposta: any) => (
+          <View key={String(resposta.id)} style={{ marginTop: 8 }}>
+            {renderComentario(resposta, nivel + 1)}
+          </View>
+        ))}
+      </View>
+    );
   };
 
   const renderCheckin = ({ item }: any) => {
@@ -648,22 +713,30 @@ export default function Grupo() {
                     Nenhum comentario ainda.
                   </Text>
                 }
-                renderItem={({ item }) => {
-                  const nome = item.nome ?? 'Usuario';
-                  const iniciais = nome.length >= 2 ? nome.substring(0, 2).toUpperCase() : '?';
-                  return (
-                    <View style={{ flexDirection: 'row', marginBottom: 14 }}>
-                      <View style={[styles.postAvatar, { width: 34, height: 34, marginRight: 10 }]}>
-                        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>{iniciais}</Text>
-                      </View>
-                      <View style={{ flex: 1, backgroundColor: '#F5F5F5', borderRadius: 8, padding: 10 }}>
-                        <Text style={{ color: '#0B2046', fontWeight: 'bold', marginBottom: 4 }}>{nome}</Text>
-                        <Text style={{ color: '#333', lineHeight: 20 }}>{item.texto}</Text>
-                      </View>
-                    </View>
-                  );
-                }}
+                renderItem={({ item }) => renderComentario(item)}
               />
+            )}
+
+            {comentarioRespondendo && (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  backgroundColor: '#FFF3E0',
+                  borderRadius: 8,
+                  paddingHorizontal: 10,
+                  paddingVertical: 8,
+                  marginTop: 10,
+                }}
+              >
+                <Text style={{ color: '#0B2046', flex: 1 }} numberOfLines={1}>
+                  Respondendo {comentarioRespondendo.nome ?? 'comentario'}
+                </Text>
+                <TouchableOpacity onPress={() => setComentarioRespondendo(null)}>
+                  <Feather name="x" size={18} color="#666" />
+                </TouchableOpacity>
+              </View>
             )}
 
             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
@@ -671,7 +744,7 @@ export default function Grupo() {
                 style={[styles.input, { flex: 1, marginBottom: 0, marginRight: 10 }]}
                 value={textoComentario}
                 onChangeText={setTextoComentario}
-                placeholder="Escreva um comentario"
+                placeholder={comentarioRespondendo ? 'Escreva uma resposta' : 'Escreva um comentario'}
                 editable={!enviandoComentario}
               />
               <TouchableOpacity
