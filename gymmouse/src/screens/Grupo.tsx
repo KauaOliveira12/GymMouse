@@ -10,8 +10,10 @@ import {
   TextInput,
   Pressable,
   Image,
+  ScrollView,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { API_URL } from '../config/api';
 import { styles } from './styles';
@@ -43,6 +45,16 @@ function mapRankingLinha(raw: any, index: number, usuarioLogadoId: string | null
     pontos,
     destaque,
   };
+}
+
+function textoRegrasPontuacao(grupo: any): string {
+  const base = Number(grupo?.pontosPorCheckin ?? 1) || 1;
+  const dias = Number(grupo?.diasSequenciaParaBonus ?? 0);
+  const mult = Number(grupo?.multiplicadorSequencia ?? 1) || 1;
+  const ptsLabel = base === 1 ? '1 ponto' : `${base} pontos`;
+  if (dias <= 0) return `${ptsLabel} por check-in`;
+  const multFmt = Number.isInteger(mult) ? String(mult) : mult.toFixed(1);
+  return `${ptsLabel}/check-in · ${dias} dias seguidos = x${multFmt}`;
 }
 
 function idCriadorDoGrupo(grupo: any): string | null {
@@ -80,15 +92,24 @@ export default function Grupo() {
   const [rankingApi, setRankingApi] = useState<any[]>([]);
   const [checkinsLocais, setCheckinsLocais] = useState<any[]>([]);
   const [saindo, setSaindo] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
   const [curtindoId, setCurtindoId] = useState<string | null>(null);
 
   const [menuVisivel, setMenuVisivel] = useState(false);
   const [confirmarSairVisivel, setConfirmarSairVisivel] = useState(false);
+  const [confirmarExcluirVisivel, setConfirmarExcluirVisivel] = useState(false);
   const [editarVisivel, setEditarVisivel] = useState(false);
   const [comentariosVisivel, setComentariosVisivel] = useState(false);
   const [nomeEdicao, setNomeEdicao] = useState('');
   const [descricaoEdicao, setDescricaoEdicao] = useState('');
+  const [imagemCapaEdicao, setImagemCapaEdicao] = useState<string | null>(null);
+  const [imagemCapaOriginal, setImagemCapaOriginal] = useState<string | null>(null);
+  const [pontosPorCheckinEdicao, setPontosPorCheckinEdicao] = useState('1');
+  const [diasSequenciaEdicao, setDiasSequenciaEdicao] = useState('3');
+  const [multiplicadorSequenciaEdicao, setMultiplicadorSequenciaEdicao] = useState('2');
+  const [bonusSequenciaEdicao, setBonusSequenciaEdicao] = useState(true);
+  const [menuCapaVisivel, setMenuCapaVisivel] = useState(false);
   const [checkinSelecionado, setCheckinSelecionado] = useState<any>(null);
   const [comentarios, setComentarios] = useState<any[]>([]);
   const [textoComentario, setTextoComentario] = useState('');
@@ -108,6 +129,11 @@ export default function Grupo() {
     grupoApi?.descricao != null ? String(grupoApi.descricao) : String(params.descricao ?? '');
   const codigoAcesso =
     grupoApi?.codigoAcesso != null ? String(grupoApi.codigoAcesso) : '';
+  const imagemCapaExibicao =
+    grupoApi?.imagemCapa != null && String(grupoApi.imagemCapa).trim() !== ''
+      ? String(grupoApi.imagemCapa)
+      : null;
+  const regrasPontuacaoTexto = grupoApi ? textoRegrasPontuacao(grupoApi) : null;
 
   const membrosExibicao = (() => {
     if (grupoApi?.totalMembros != null) return Number(grupoApi.totalMembros);
@@ -128,7 +154,60 @@ export default function Grupo() {
     setMenuVisivel(false);
     setNomeEdicao(nomeExibicao);
     setDescricaoEdicao(descricaoExibicao);
+    setImagemCapaEdicao(imagemCapaExibicao);
+    setImagemCapaOriginal(imagemCapaExibicao);
+    const pontosBase = Number(grupoApi?.pontosPorCheckin ?? 1) || 1;
+    const diasBonus = Number(grupoApi?.diasSequenciaParaBonus ?? 0);
+    const mult = Number(grupoApi?.multiplicadorSequencia ?? 2) || 2;
+    setPontosPorCheckinEdicao(String(pontosBase));
+    setBonusSequenciaEdicao(diasBonus > 0);
+    setDiasSequenciaEdicao(diasBonus > 0 ? String(diasBonus) : '3');
+    setMultiplicadorSequenciaEdicao(String(mult));
     setEditarVisivel(true);
+  };
+
+  const aplicarCapaSelecionada = (resultado: ImagePicker.ImagePickerResult) => {
+    if (resultado.canceled) return;
+    const asset = resultado.assets[0];
+    setImagemCapaEdicao(
+      asset.base64 ? `data:${asset.mimeType ?? 'image/jpeg'};base64,${asset.base64}` : asset.uri
+    );
+  };
+
+  const tirarFotoCapa = async () => {
+    const permissao = await ImagePicker.requestCameraPermissionsAsync();
+    if (permissao.status !== 'granted') {
+      Alert.alert('Permissao negada', 'Precisamos de acesso a camera para alterar a capa.');
+      return;
+    }
+    const resultado = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+      base64: true,
+    });
+    aplicarCapaSelecionada(resultado);
+  };
+
+  const escolherCapaDaGaleria = async () => {
+    const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissao.status !== 'granted') {
+      Alert.alert('Permissao negada', 'Precisamos de acesso a galeria para escolher a capa.');
+      return;
+    }
+    const resultado = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+      base64: true,
+    });
+    aplicarCapaSelecionada(resultado);
+  };
+
+  const escolherOpcaoCapa = async (acao: () => Promise<void>) => {
+    setMenuCapaVisivel(false);
+    await acao();
   };
 
   const abrirConfirmarSair = () => {
@@ -141,6 +220,56 @@ export default function Grupo() {
       return;
     }
     setConfirmarSairVisivel(true);
+  };
+
+  const abrirConfirmarExcluir = () => {
+    setMenuVisivel(false);
+    if (!podeUsarApi || !isCriador) return;
+    setConfirmarExcluirVisivel(true);
+  };
+
+  const executarExcluirGrupo = async () => {
+    if (!podeUsarApi || !isCriador || !usuarioLogadoId) {
+      setConfirmarExcluirVisivel(false);
+      return;
+    }
+
+    setExcluindo(true);
+    try {
+      const resposta = await fetch(
+        `${API_URL}/api/grupos/${grupoId}?usuarioId=${encodeURIComponent(usuarioLogadoId)}`,
+        { method: 'DELETE' }
+      );
+
+      setConfirmarExcluirVisivel(false);
+
+      if (resposta.status === 204) {
+        navigation.goBack();
+        return;
+      }
+
+      const dados = await lerResposta(resposta);
+      const msg =
+        typeof dados === 'object' && dados !== null
+          ? dados.mensagem || dados.message || dados.error
+          : dados;
+      if (resposta.status === 403) {
+        Alert.alert('Erro', String(msg || 'Somente o criador pode excluir este grupo.'));
+        return;
+      }
+      if (resposta.status === 404) {
+        Alert.alert('Erro', String(msg || 'Grupo nao encontrado.'));
+        navigation.goBack();
+        return;
+      }
+      Alert.alert('Erro', String(msg || `Nao foi possivel excluir (${resposta.status}).`));
+    } catch (e) {
+      console.log(e);
+      setConfirmarExcluirVisivel(false);
+      Alert.alert('Conexao', 'Falha ao excluir o grupo.');
+    } finally {
+      setExcluindo(false);
+    }
   };
 
   const executarSairDoGrupo = async () => {
@@ -205,16 +334,31 @@ export default function Grupo() {
       return;
     }
 
+    const pontosBase = Math.max(1, parseInt(pontosPorCheckinEdicao, 10) || 1);
+    const payload: Record<string, unknown> = {
+      nome,
+      descricao: descricaoEdicao.trim(),
+      usuarioId: Number(usuarioLogadoId),
+      pontosPorCheckin: pontosBase,
+    };
+    if (imagemCapaEdicao !== imagemCapaOriginal) {
+      payload.imagemCapa = imagemCapaEdicao?.trim() ?? '';
+    }
+    if (bonusSequenciaEdicao) {
+      const dias = Math.max(1, parseInt(diasSequenciaEdicao, 10) || 3);
+      const mult = parseFloat(multiplicadorSequenciaEdicao.replace(',', '.')) || 1;
+      payload.diasSequenciaParaBonus = dias;
+      payload.multiplicadorSequencia = mult > 0 ? mult : 1;
+    } else {
+      payload.diasSequenciaParaBonus = 0;
+    }
+
     setSalvandoEdicao(true);
     try {
       const resposta = await fetch(`${API_URL}/api/grupos/${grupoId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nome,
-          descricao: descricaoEdicao.trim(),
-          usuarioId: Number(usuarioLogadoId),
-        }),
+        body: JSON.stringify(payload),
       });
       const dados = await lerResposta(resposta);
 
@@ -596,28 +740,59 @@ export default function Grupo() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.grupoCover}>
-        {carregandoApi ? (
-          <ActivityIndicator color="#FFF" />
-        ) : (
+      <View style={[styles.grupoCover, imagemCapaExibicao ? { height: 180 } : { height: 120 }]}>
+        {imagemCapaExibicao && (
           <>
+            <Image source={{ uri: imagemCapaExibicao }} style={styles.grupoCoverImage} resizeMode="cover" />
+            <View style={styles.grupoCoverOverlay} />
+          </>
+        )}
+        {carregandoApi ? (
+          <ActivityIndicator color="#FFF" style={{ zIndex: 1 }} />
+        ) : (
+          <View style={styles.grupoCoverContent}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <Feather name="users" size={16} color="#FFF" />
-              <Text style={styles.grupoCoverText}>{membrosExibicao} membro(s)</Text>
+              <Text style={[styles.grupoCoverText, imagemCapaExibicao && { color: '#FFF' }]}>
+                {membrosExibicao} membro(s)
+              </Text>
               <Feather name="award" size={16} color="#FFF" style={{ marginLeft: 10 }} />
-              <Text style={styles.grupoCoverText}>{pontosTotaisRanking} pts (ranking)</Text>
+              <Text style={[styles.grupoCoverText, imagemCapaExibicao && { color: '#FFF' }]}>
+                {pontosTotaisRanking} pts (ranking)
+              </Text>
             </View>
+            {regrasPontuacaoTexto && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+                <Feather name="zap" size={14} color="#FF8C00" />
+                <Text
+                  style={[
+                    styles.grupoCoverText,
+                    { marginTop: 0, marginLeft: 6, color: imagemCapaExibicao ? '#FFE0B2' : '#FF8C00' },
+                  ]}
+                >
+                  {regrasPontuacaoTexto}
+                </Text>
+              </View>
+            )}
             {descricaoExibicao !== '' && (
-              <Text style={[styles.grupoCoverText, { marginTop: 10, opacity: 0.95 }]} numberOfLines={4}>
+              <Text
+                style={[styles.grupoCoverText, { marginTop: 10, opacity: 0.95, color: imagemCapaExibicao ? '#EEE' : '#CCC' }]}
+                numberOfLines={4}
+              >
                 {descricaoExibicao}
               </Text>
             )}
             {codigoAcesso !== '' && (
-              <Text style={[styles.grupoCoverText, { marginTop: 8, fontSize: 12, opacity: 0.85 }]}>
+              <Text
+                style={[
+                  styles.grupoCoverText,
+                  { marginTop: 8, fontSize: 12, opacity: 0.85, color: imagemCapaExibicao ? '#DDD' : '#CCC' },
+                ]}
+              >
                 Codigo: {codigoAcesso}
               </Text>
             )}
-          </>
+          </View>
         )}
       </View>
 
@@ -772,13 +947,22 @@ export default function Grupo() {
           <Pressable style={[styles.modalContainer, { padding: 0, overflow: 'hidden' }]} onPress={(e) => e.stopPropagation()}>
             <Text style={[styles.modalTitle, { padding: 16, paddingBottom: 8 }]}>Opcoes</Text>
             {isCriador && (
-              <TouchableOpacity
-                style={[styles.modalActionBtn, { borderBottomWidth: 1, borderBottomColor: '#EEE' }]}
-                onPress={abrirEditar}
-              >
-                <Feather name="edit-2" size={20} color="#0B2046" style={styles.modalActionIcon} />
-                <Text style={styles.modalActionText}>Editar grupo</Text>
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity
+                  style={[styles.modalActionBtn, { borderBottomWidth: 1, borderBottomColor: '#EEE' }]}
+                  onPress={abrirEditar}
+                >
+                  <Feather name="edit-2" size={20} color="#0B2046" style={styles.modalActionIcon} />
+                  <Text style={styles.modalActionText}>Editar grupo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalActionBtn, { borderBottomWidth: 1, borderBottomColor: '#EEE' }]}
+                  onPress={abrirConfirmarExcluir}
+                >
+                  <Feather name="trash-2" size={20} color="#FF3B30" style={styles.modalActionIcon} />
+                  <Text style={[styles.modalActionText, { color: '#FF3B30' }]}>Excluir grupo</Text>
+                </TouchableOpacity>
+              </>
             )}
             <TouchableOpacity style={styles.modalActionBtn} onPress={abrirConfirmarSair}>
               <Feather name="log-out" size={20} color="#FF3B30" style={styles.modalActionIcon} />
@@ -786,6 +970,37 @@ export default function Grupo() {
             </TouchableOpacity>
             <TouchableOpacity style={[styles.modalActionBtn, { justifyContent: 'center' }]} onPress={() => setMenuVisivel(false)}>
               <Text style={[styles.modalActionText, { color: '#999' }]}>Cancelar</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={confirmarExcluirVisivel}
+        animationType="fade"
+        onRequestClose={() => !excluindo && setConfirmarExcluirVisivel(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => !excluindo && setConfirmarExcluirVisivel(false)}>
+          <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>Excluir grupo?</Text>
+            <Text style={{ color: '#666', marginBottom: 20, lineHeight: 22 }}>
+              O grupo "{nomeExibicao}" sera removido permanentemente, junto com membros, check-ins e ranking. Esta acao
+              nao pode ser desfeita.
+            </Text>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: '#FF3B30', marginBottom: 10 }]}
+              onPress={() => void executarExcluirGrupo()}
+              disabled={excluindo}
+            >
+              <Text style={styles.buttonText}>{excluindo ? 'Excluindo...' : 'Sim, excluir'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => setConfirmarExcluirVisivel(false)}
+              disabled={excluindo}
+            >
+              <Text style={styles.buttonText}>Cancelar</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -814,25 +1029,148 @@ export default function Grupo() {
 
       <Modal transparent visible={editarVisivel} animationType="slide" onRequestClose={() => setEditarVisivel(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => !salvandoEdicao && setEditarVisivel(false)}>
-          <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[styles.modalContainer, { maxHeight: '90%' }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Editar grupo</Text>
               <TouchableOpacity onPress={() => !salvandoEdicao && setEditarVisivel(false)}>
                 <Feather name="x" size={24} color="#999" />
               </TouchableOpacity>
             </View>
-            <Text style={styles.label}>Nome</Text>
-            <TextInput style={styles.input} value={nomeEdicao} onChangeText={setNomeEdicao} placeholder="Nome do grupo" />
-            <Text style={styles.label}>Descricao</Text>
-            <TextInput
-              style={[styles.input, { height: 88, textAlignVertical: 'top' }]}
-              value={descricaoEdicao}
-              onChangeText={setDescricaoEdicao}
-              placeholder="Descricao"
-              multiline
-            />
-            <TouchableOpacity style={styles.button} onPress={() => void salvarEdicaoGrupo()} disabled={salvandoEdicao}>
-              <Text style={styles.buttonText}>{salvandoEdicao ? 'Salvando...' : 'Salvar'}</Text>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={styles.label}>Imagem de capa</Text>
+              <TouchableOpacity style={styles.grupoCapaPreview} onPress={() => setMenuCapaVisivel(true)} disabled={salvandoEdicao}>
+                {imagemCapaEdicao ? (
+                  <Image source={{ uri: imagemCapaEdicao }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                ) : (
+                  <>
+                    <Feather name="image" size={32} color="#BBB" />
+                    <Text style={{ color: '#999', marginTop: 8 }}>Toque para escolher uma capa</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              {imagemCapaEdicao && (
+                <TouchableOpacity
+                  style={{ alignSelf: 'flex-start', marginBottom: 12, marginTop: -4 }}
+                  onPress={() => setImagemCapaEdicao(null)}
+                  disabled={salvandoEdicao}
+                >
+                  <Text style={styles.linkText}>Remover capa</Text>
+                </TouchableOpacity>
+              )}
+
+              <Text style={styles.label}>Nome</Text>
+              <TextInput
+                style={styles.input}
+                value={nomeEdicao}
+                onChangeText={setNomeEdicao}
+                placeholder="Nome do grupo"
+                editable={!salvandoEdicao}
+              />
+              <Text style={styles.label}>Descricao</Text>
+              <TextInput
+                style={[styles.input, { height: 88, textAlignVertical: 'top' }]}
+                value={descricaoEdicao}
+                onChangeText={setDescricaoEdicao}
+                placeholder="Descricao"
+                multiline
+                editable={!salvandoEdicao}
+              />
+
+              <View style={styles.grupoRegrasBox}>
+                <Text style={styles.grupoRegrasTitulo}>Regras de pontuacao</Text>
+                <Text style={styles.label}>Pontos por check-in</Text>
+                <TextInput
+                  style={styles.input}
+                  value={pontosPorCheckinEdicao}
+                  onChangeText={setPontosPorCheckinEdicao}
+                  placeholder="1"
+                  keyboardType="number-pad"
+                  editable={!salvandoEdicao}
+                />
+                <View style={styles.grupoSwitchRow}>
+                  <Text style={{ color: '#333', fontWeight: '600', flex: 1 }}>Bonus por dias seguidos</Text>
+                  <TouchableOpacity
+                    onPress={() => !salvandoEdicao && setBonusSequenciaEdicao((v) => !v)}
+                    style={{
+                      backgroundColor: bonusSequenciaEdicao ? '#FF8C00' : '#CCC',
+                      borderRadius: 14,
+                      width: 48,
+                      height: 28,
+                      justifyContent: 'center',
+                      paddingHorizontal: 4,
+                      opacity: salvandoEdicao ? 0.6 : 1,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: 10,
+                        backgroundColor: '#FFF',
+                        alignSelf: bonusSequenciaEdicao ? 'flex-end' : 'flex-start',
+                      }}
+                    />
+                  </TouchableOpacity>
+                </View>
+                {bonusSequenciaEdicao ? (
+                  <>
+                    <Text style={styles.label}>Dias seguidos para ativar bonus</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={diasSequenciaEdicao}
+                      onChangeText={setDiasSequenciaEdicao}
+                      placeholder="3"
+                      keyboardType="number-pad"
+                      editable={!salvandoEdicao}
+                    />
+                    <Text style={styles.label}>Multiplicador (ex: 2 = dobrar)</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={multiplicadorSequenciaEdicao}
+                      onChangeText={setMultiplicadorSequenciaEdicao}
+                      placeholder="2"
+                      keyboardType="decimal-pad"
+                      editable={!salvandoEdicao}
+                    />
+                    <Text style={{ color: '#666', fontSize: 12, marginTop: -8, marginBottom: 4 }}>
+                      Ex: 3 dias + multiplicador 2.0 = a partir do 3o dia, cada check-in vale o dobro.
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={{ color: '#666', fontSize: 12, marginBottom: 4 }}>
+                    Com o bonus desativado, cada check-in vale apenas os pontos base.
+                  </Text>
+                )}
+              </View>
+
+              <TouchableOpacity style={styles.button} onPress={() => void salvarEdicaoGrupo()} disabled={salvandoEdicao}>
+                <Text style={styles.buttonText}>{salvandoEdicao ? 'Salvando...' : 'Salvar'}</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal transparent visible={menuCapaVisivel} animationType="fade" onRequestClose={() => setMenuCapaVisivel(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setMenuCapaVisivel(false)}>
+          <Pressable style={[styles.modalContainer, { padding: 0, overflow: 'hidden' }]} onPress={(e) => e.stopPropagation()}>
+            <Text style={[styles.modalTitle, { padding: 16, paddingBottom: 8 }]}>Capa do grupo</Text>
+            <TouchableOpacity
+              style={[styles.modalActionBtn, { borderBottomWidth: 1, borderBottomColor: '#EEE' }]}
+              onPress={() => void escolherOpcaoCapa(tirarFotoCapa)}
+            >
+              <Feather name="camera" size={20} color="#0B2046" style={styles.modalActionIcon} />
+              <Text style={styles.modalActionText}>Tirar foto</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalActionBtn, { borderBottomWidth: 1, borderBottomColor: '#EEE' }]}
+              onPress={() => void escolherOpcaoCapa(escolherCapaDaGaleria)}
+            >
+              <Feather name="image" size={20} color="#0B2046" style={styles.modalActionIcon} />
+              <Text style={styles.modalActionText}>Escolher da galeria</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalActionBtn, { justifyContent: 'center' }]} onPress={() => setMenuCapaVisivel(false)}>
+              <Text style={[styles.modalActionText, { color: '#999' }]}>Cancelar</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
