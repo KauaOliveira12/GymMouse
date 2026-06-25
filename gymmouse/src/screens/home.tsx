@@ -10,10 +10,12 @@ import {
   TextInput,
   ActivityIndicator,
   RefreshControl,
+  ScrollView,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { API_URL } from '../config/api';
+import { limparUsuarioSessao } from '../services/sessao';
 import { styles } from './styles';
 
 const GRUPOS_URL = `${API_URL}/api/grupos`;
@@ -29,14 +31,35 @@ interface Grupo {
   imagem?: string;
 }
 
+const formatarGrupoEntrada = (entrada: any): Grupo | null => {
+  const id = entrada?.grupo?.id ?? entrada?.grupoId ?? entrada?.id;
+  const nome = entrada?.grupo?.nome ?? entrada?.nomeGrupo ?? entrada?.nome;
+  if (id == null) return null;
+
+  return {
+    id: String(id),
+    nome: nome != null ? String(nome) : 'Grupo',
+    descricao: entrada?.grupo?.descricao ?? entrada?.descricao ?? '',
+    membros: typeof entrada?.grupo?.membros === 'number' ? entrada.grupo.membros : 1,
+    rank: 0,
+    pontos: 0,
+    imagem: entrada?.grupo?.imagemCapa ?? entrada?.grupo?.imagem ?? entrada?.grupo?.imagemUrl,
+  };
+};
+
 const formatarGrupo = (grupo: any): Grupo => ({
   id: String(grupo.id),
   nome: grupo.nome ?? '',
   descricao: grupo.descricao ?? '',
-  membros: typeof grupo.membros === 'number' ? grupo.membros : 1,
+  membros:
+    typeof grupo.totalMembros === 'number'
+      ? grupo.totalMembros
+      : typeof grupo.membros === 'number'
+      ? grupo.membros
+      : 1,
   rank: typeof grupo.rank === 'number' ? grupo.rank : 0,
   pontos: typeof grupo.pontos === 'number' ? grupo.pontos : 0,
-  imagem: grupo.imagem ?? grupo.imagemUrl,
+  imagem: grupo.imagemCapa ?? grupo.imagem ?? grupo.imagemUrl,
 });
 
 const lerResposta = async (resposta: Response) => {
@@ -75,6 +98,10 @@ export default function Home() {
   const [nomeNovoGrupo, setNomeNovoGrupo] = useState('');
   const [descricaoNovoGrupo, setDescricaoNovoGrupo] = useState('');
   const [codigoEntrada, setCodigoEntrada] = useState('');
+  const [pontosPorCheckinNovo, setPontosPorCheckinNovo] = useState('1');
+  const [diasSequenciaNovo, setDiasSequenciaNovo] = useState('3');
+  const [multiplicadorSequenciaNovo, setMultiplicadorSequenciaNovo] = useState('2');
+  const [bonusSequenciaNovo, setBonusSequenciaNovo] = useState(true);
 
   const usuarioId = usuario?.id != null && String(usuario.id).trim() !== '' ? String(usuario.id) : null;
 
@@ -141,13 +168,29 @@ export default function Home() {
     try {
       const nome = nomeNovoGrupo.trim();
       const descricao = descricaoNovoGrupo.trim();
+      const pontosBase = Math.max(1, parseInt(pontosPorCheckinNovo, 10) || 1);
+      const payload: Record<string, unknown> = {
+        criadorId: Number(usuarioId),
+        nome,
+        descricao,
+        pontosPorCheckin: pontosBase,
+      };
+      if (bonusSequenciaNovo) {
+        const dias = Math.max(1, parseInt(diasSequenciaNovo, 10) || 3);
+        const mult = parseFloat(multiplicadorSequenciaNovo.replace(',', '.')) || 1;
+        payload.diasSequenciaParaBonus = dias;
+        payload.multiplicadorSequencia = mult > 0 ? mult : 1;
+      } else {
+        payload.diasSequenciaParaBonus = 0;
+      }
+
       const resposta = await fetchComTimeout(GRUPOS_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Usuario-Id': usuarioId,
         },
-        body: JSON.stringify({ nome, descricao }),
+        body: JSON.stringify(payload),
       });
       const dados = await lerResposta(resposta);
 
@@ -223,13 +266,12 @@ export default function Home() {
         return;
       }
 
-      const grupoPayload =
-        dados && typeof dados === 'object' && dados.grupo != null ? dados.grupo : dados;
+      const grupoPayload = dados && typeof dados === 'object' ? formatarGrupoEntrada(dados) : null;
       fecharModal();
       await carregarGrupos();
 
-      if (grupoPayload && typeof grupoPayload === 'object' && grupoPayload.id != null) {
-        const g = formatarGrupo(grupoPayload);
+      if (grupoPayload) {
+        const g = grupoPayload;
         setTimeout(() => {
           navigation.navigate('Grupo', {
             id: g.id,
@@ -250,6 +292,11 @@ export default function Home() {
     } finally {
       setEntrando(false);
     }
+  };
+
+  const handleLogout = async () => {
+    await limparUsuarioSessao();
+    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
 
   const renderCard = ({ item }: { item: Grupo }) => (
@@ -293,6 +340,10 @@ export default function Home() {
     setNomeNovoGrupo('');
     setDescricaoNovoGrupo('');
     setCodigoEntrada('');
+    setPontosPorCheckinNovo('1');
+    setDiasSequenciaNovo('3');
+    setMultiplicadorSequenciaNovo('2');
+    setBonusSequenciaNovo(true);
   };
 
   if (!usuarioId) {
@@ -316,6 +367,18 @@ export default function Home() {
             <Text>🐭</Text>
           </View>
           <Text style={styles.headerTitle}>GymMouse</Text>
+        </View>
+        <View style={styles.headerIcons}>
+          <TouchableOpacity
+            style={styles.btnSair}
+            onPress={() => navigation.navigate('Perfil', { usuario })}
+            accessibilityLabel="Perfil"
+          >
+            <Feather name="user" size={24} color="#FFF" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.btnSair} onPress={handleLogout} accessibilityLabel="Deslogar">
+            <Feather name="log-out" size={24} color="#FFF" />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -367,7 +430,7 @@ export default function Home() {
                   style={styles.modalActionBtn}
                   onPress={() => {
                     fecharModal();
-                    setTimeout(() => navigation.navigate('Checkin', { id: 'geral' }), 150);
+                    setTimeout(() => Alert.alert('Check-in', 'Abra um grupo e toque na camera para fazer check-in.'), 150);
                   }}
                 >
                   <Feather name="camera" size={20} color="#333" />
@@ -377,7 +440,7 @@ export default function Home() {
             )}
 
             {telaModal === 'criar' && (
-              <View>
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <Text style={styles.label}>Nome do Grupo</Text>
                 <TextInput
                   style={styles.input}
@@ -393,13 +456,68 @@ export default function Home() {
                   onChangeText={setDescricaoNovoGrupo}
                   multiline
                 />
+                <View style={styles.grupoRegrasBox}>
+                  <Text style={styles.grupoRegrasTitulo}>Pontuacao (opcional)</Text>
+                  <Text style={styles.label}>Pontos por check-in</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="1"
+                    value={pontosPorCheckinNovo}
+                    onChangeText={setPontosPorCheckinNovo}
+                    keyboardType="number-pad"
+                  />
+                  <View style={styles.grupoSwitchRow}>
+                    <Text style={{ color: '#333', fontWeight: '600', flex: 1 }}>Bonus por dias seguidos</Text>
+                    <TouchableOpacity
+                      onPress={() => setBonusSequenciaNovo((v) => !v)}
+                      style={{
+                        backgroundColor: bonusSequenciaNovo ? '#FF8C00' : '#CCC',
+                        borderRadius: 14,
+                        width: 48,
+                        height: 28,
+                        justifyContent: 'center',
+                        paddingHorizontal: 4,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: 10,
+                          backgroundColor: '#FFF',
+                          alignSelf: bonusSequenciaNovo ? 'flex-end' : 'flex-start',
+                        }}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {bonusSequenciaNovo && (
+                    <>
+                      <Text style={styles.label}>Dias seguidos para ativar bonus</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="3"
+                        value={diasSequenciaNovo}
+                        onChangeText={setDiasSequenciaNovo}
+                        keyboardType="number-pad"
+                      />
+                      <Text style={styles.label}>Multiplicador (ex: 2 = dobrar)</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="2"
+                        value={multiplicadorSequenciaNovo}
+                        onChangeText={setMultiplicadorSequenciaNovo}
+                        keyboardType="decimal-pad"
+                      />
+                    </>
+                  )}
+                </View>
                 <TouchableOpacity style={styles.button} onPress={handleCriarGrupo} disabled={salvando}>
                   <Text style={styles.buttonText}>{salvando ? 'Salvando...' : 'Criar Grupo'}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={{ marginTop: 12, alignItems: 'center' }} onPress={() => setTelaModal('opcoes')}>
                   <Text style={styles.linkText}>Voltar</Text>
                 </TouchableOpacity>
-              </View>
+              </ScrollView>
             )}
 
             {telaModal === 'entrar' && (

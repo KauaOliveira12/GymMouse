@@ -172,7 +172,8 @@ export const styles = StyleSheet.create({
     marginLeft: 5 
   },
   btnSair: { 
-    padding: 5 
+    padding: 5,
+    marginLeft: 10,
   },
   fab: {
     position: 'absolute',
@@ -257,16 +258,72 @@ export const styles = StyleSheet.create({
     marginLeft: 15,
   },
   grupoCover: {
-    backgroundColor: '#1C2026', // Fundo escuro igual ao protótipo
+    backgroundColor: '#1C2026',
     padding: 20,
     alignItems: 'flex-start',
     justifyContent: 'flex-end',
-    height: 120,
+    minHeight: 120,
+    overflow: 'hidden',
+  },
+  grupoCoverImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  grupoCoverOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  grupoCoverContent: {
+    width: '100%',
+    zIndex: 1,
   },
   grupoCoverText: {
     color: '#CCC',
     fontSize: 14,
     marginTop: 5,
+  },
+  grupoCapaPreview: {
+    width: '100%',
+    height: 140,
+    borderRadius: 10,
+    backgroundColor: '#F0F0F0',
+    marginBottom: 12,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  grupoCapaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderStyle: 'dashed',
+  },
+  grupoRegrasBox: {
+    backgroundColor: '#FFF8F0',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
+  },
+  grupoRegrasTitulo: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#0B2046',
+    marginBottom: 10,
+  },
+  grupoSwitchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
   tabsContainer: {
     flexDirection: 'row',

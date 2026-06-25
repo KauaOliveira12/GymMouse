@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import { API_URL } from '../config/api';
+import { salvarUsuarioSessao } from '../services/sessao';
 import { styles } from './styles';
 
 export default function Login() {
@@ -49,6 +50,8 @@ export default function Login() {
         Alert.alert('Erro', String(msg));
         return;
       }
+
+      await salvarUsuarioSessao(dados);
 
       navigation.dispatch(
         CommonActions.reset({

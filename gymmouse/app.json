@@ -14,6 +14,11 @@
     },
 
     "android": {
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -40,6 +45,13 @@
           "dark": {
             "backgroundColor": "#000000"
           }
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permita que o Gymmouse acesse suas fotos para escolher uma imagem.",
+          "cameraPermission": "Permita que o Gymmouse use a camera para tirar uma foto."
         }
       ]
     ]
