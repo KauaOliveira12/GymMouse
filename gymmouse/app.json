@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "gymmouse",
-    "slug": "gymmouse",
+    "name": "Streaks",
+    "slug": "Streaks",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "gymmouse",
+    "scheme": "Streaks",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
 
@@ -50,8 +50,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Permita que o Gymmouse acesse suas fotos para escolher uma imagem.",
-          "cameraPermission": "Permita que o Gymmouse use a camera para tirar uma foto."
+          "photosPermission": "Permita que o Streaks acesse suas fotos para escolher uma imagem.",
+          "cameraPermission": "Permita que o Streaks use a camera para tirar uma foto."
         }
       ]
     ]

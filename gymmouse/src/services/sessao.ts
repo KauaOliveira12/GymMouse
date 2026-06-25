@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SESSAO_USUARIO_KEY = '@gymmouse:usuario';
+const SESSAO_USUARIO_KEY = '@streaks:usuario';
 
 export const salvarUsuarioSessao = async (usuario: unknown) => {
   await AsyncStorage.setItem(SESSAO_USUARIO_KEY, JSON.stringify(usuario));

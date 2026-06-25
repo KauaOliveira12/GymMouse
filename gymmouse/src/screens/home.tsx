@@ -16,7 +16,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { API_URL } from '../config/api';
 import { limparUsuarioSessao } from '../services/sessao';
-import { styles } from './styles';
+import { useTheme } from '../context/ThemeContext';
 
 const GRUPOS_URL = `${API_URL}/api/grupos`;
 const GRUPOS_ENTRAR_URL = `${API_URL}/api/grupos/entrar`;
@@ -55,8 +55,8 @@ const formatarGrupo = (grupo: any): Grupo => ({
     typeof grupo.totalMembros === 'number'
       ? grupo.totalMembros
       : typeof grupo.membros === 'number'
-      ? grupo.membros
-      : 1,
+        ? grupo.membros
+        : 1,
   rank: typeof grupo.rank === 'number' ? grupo.rank : 0,
   pontos: typeof grupo.pontos === 'number' ? grupo.pontos : 0,
   imagem: grupo.imagemCapa ?? grupo.imagem ?? grupo.imagemUrl,
@@ -85,6 +85,7 @@ const fetchComTimeout = async (url: string, options?: RequestInit, timeoutMs = 1
 export default function Home() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { styles, palette, isDark, toggleTheme } = useTheme();
   const usuario = route.params?.usuario as { id?: number | string } | undefined;
 
   const [grupos, setGrupos] = useState<Grupo[]>([]);
@@ -317,8 +318,8 @@ export default function Home() {
       {item.imagem ? (
         <Image source={{ uri: item.imagem }} style={styles.groupCardImage} />
       ) : (
-        <View style={[styles.groupCardImage, { backgroundColor: '#DDD', justifyContent: 'center', alignItems: 'center' }]}>
-          <Text style={{ fontWeight: 'bold', color: '#666' }}>
+        <View style={[styles.groupCardImage, { backgroundColor: palette.imagePlaceholder, justifyContent: 'center', alignItems: 'center' }]}>
+          <Text style={{ fontWeight: 'bold', color: palette.textSecondary }}>
             {item.nome.length >= 2 ? item.nome.substring(0, 2).toUpperCase() : '?'}
           </Text>
         </View>
@@ -327,7 +328,7 @@ export default function Home() {
       <View style={styles.groupCardInfo}>
         <Text style={styles.groupCardTitle}>{item.nome}</Text>
         <View style={styles.groupCardRow}>
-          <Feather name="users" size={14} color="#666" />
+          <Feather name="users" size={14} color={palette.textSecondary} />
           <Text style={styles.groupCardText}>{item.membros} membros</Text>
         </View>
       </View>
@@ -349,7 +350,7 @@ export default function Home() {
   if (!usuarioId) {
     return (
       <View style={[styles.homeContainer, { justifyContent: 'center', padding: 24 }]}>
-        <Text style={{ textAlign: 'center', color: '#666', marginBottom: 16 }}>
+        <Text style={{ textAlign: 'center', color: palette.textSecondary, marginBottom: 16 }}>
           Nenhum usuario na sessao. Entre com login na API para ver seus grupos.
         </Text>
         <TouchableOpacity style={styles.button} onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Login' }] })}>
@@ -364,20 +365,27 @@ export default function Home() {
       <View style={styles.header}>
         <View style={styles.headerLogo}>
           <View style={styles.logoCircle}>
-            <Text>🐭</Text>
+            <Image source={require('../../assets/images/logoChama.png')} style={styles.headerLogoImage} />
           </View>
-          <Text style={styles.headerTitle}>GymMouse</Text>
+          <Text style={styles.headerTitle}>Streaks</Text>
         </View>
         <View style={styles.headerIcons}>
           <TouchableOpacity
             style={styles.btnSair}
-            onPress={() => navigation.navigate('Perfil', { usuario })}
-            accessibilityLabel="Perfil"
+            onPress={toggleTheme}
+            accessibilityLabel={isDark ? 'Tema claro' : 'Tema escuro'}
           >
-            <Feather name="user" size={24} color="#FFF" />
+            <Feather name={isDark ? 'sun' : 'moon'} size={24} color={palette.headerText} />
+          </TouchableOpacity>
+          <TouchableOpacity
+              style={styles.btnSair}
+              onPress={() => navigation.navigate('Perfil', { usuario })}
+              accessibilityLabel="Perfil"
+          >
+            <Feather name="user" size={24} color={palette.headerText} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.btnSair} onPress={handleLogout} accessibilityLabel="Deslogar">
-            <Feather name="log-out" size={24} color="#FFF" />
+            <Feather name="log-out" size={24} color={palette.headerText} />
           </TouchableOpacity>
         </View>
       </View>
@@ -385,15 +393,15 @@ export default function Home() {
       <Text style={styles.pageTitle}>Meus Grupos</Text>
 
       {carregando ? (
-        <ActivityIndicator size="large" color="#FF8C00" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={palette.accent} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={grupos}
           keyExtractor={(item) => item.id}
           renderItem={renderCard}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#FF8C00']} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[palette.accent]} />}
           ListEmptyComponent={
-            <Text style={{ textAlign: 'center', marginTop: 48, color: '#999', paddingHorizontal: 24 }}>
+            <Text style={{ textAlign: 'center', marginTop: 48, color: palette.textMuted, paddingHorizontal: 24 }}>
               Nenhum grupo ainda. Crie um ou entre com um codigo de acesso.
             </Text>
           }
@@ -401,7 +409,7 @@ export default function Home() {
       )}
 
       <TouchableOpacity style={styles.fab} onPress={() => setModalVisivel(true)}>
-        <Feather name="plus" size={30} color="#FFF" />
+        <Feather name="plus" size={30} color={palette.white} />
       </TouchableOpacity>
 
       <Modal visible={modalVisivel} transparent animationType="slide">
@@ -412,29 +420,19 @@ export default function Home() {
                 {telaModal === 'opcoes' ? 'Acoes' : telaModal === 'criar' ? 'Novo Grupo' : 'Entrar no grupo'}
               </Text>
               <TouchableOpacity onPress={fecharModal}>
-                <Feather name="x" size={24} color="#666" />
+                <Feather name="x" size={24} color={palette.textSecondary} />
               </TouchableOpacity>
             </View>
 
             {telaModal === 'opcoes' && (
               <View>
                 <TouchableOpacity style={styles.modalActionBtn} onPress={() => setTelaModal('criar')}>
-                  <Feather name="users" size={20} color="#333" />
+                  <Feather name="users" size={20} color={palette.text} />
                   <Text style={styles.modalActionText}>Criar Novo Grupo</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.modalActionBtn} onPress={() => setTelaModal('entrar')}>
-                  <Feather name="log-in" size={20} color="#333" />
+                  <Feather name="log-in" size={20} color={palette.text} />
                   <Text style={styles.modalActionText}>Participar com codigo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.modalActionBtn}
-                  onPress={() => {
-                    fecharModal();
-                    setTimeout(() => Alert.alert('Check-in', 'Abra um grupo e toque na camera para fazer check-in.'), 150);
-                  }}
-                >
-                  <Feather name="camera" size={20} color="#333" />
-                  <Text style={styles.modalActionText}>Fazer Check-in</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -467,11 +465,11 @@ export default function Home() {
                     keyboardType="number-pad"
                   />
                   <View style={styles.grupoSwitchRow}>
-                    <Text style={{ color: '#333', fontWeight: '600', flex: 1 }}>Bonus por dias seguidos</Text>
+                    <Text style={{ color: palette.text, fontWeight: '600', flex: 1 }}>Bonus por dias seguidos</Text>
                     <TouchableOpacity
                       onPress={() => setBonusSequenciaNovo((v) => !v)}
                       style={{
-                        backgroundColor: bonusSequenciaNovo ? '#FF8C00' : '#CCC',
+                        backgroundColor: bonusSequenciaNovo ? palette.accent : palette.switchOff,
                         borderRadius: 14,
                         width: 48,
                         height: 28,
@@ -484,7 +482,7 @@ export default function Home() {
                           width: 20,
                           height: 20,
                           borderRadius: 10,
-                          backgroundColor: '#FFF',
+                          backgroundColor: palette.switchKnob,
                           alignSelf: bonusSequenciaNovo ? 'flex-end' : 'flex-start',
                         }}
                       />

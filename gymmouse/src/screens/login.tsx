@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import { API_URL } from '../config/api';
 import { salvarUsuarioSessao } from '../services/sessao';
-import { styles } from './styles';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Login() {
   const navigation = useNavigation<any>();
+  const { styles, palette } = useTheme();
 
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -71,15 +72,16 @@ export default function Login() {
     <View style={styles.container}>
       <View style={styles.card}>
         <View style={styles.logoContainer}>
-          <Text style={{ fontSize: 40 }}>🐭</Text>
+          <Image source={require('../../assets/images/logoChama.png')} style={styles.logoImage} />
         </View>
-        <Text style={styles.title}>GymMouse</Text>
+        <Text style={styles.title}>Streaks</Text>
         <Text style={styles.subtitle}>Mantenha-se focado em seus exercicios</Text>
 
         <Text style={styles.label}>Email</Text>
         <TextInput
           style={styles.input}
           placeholder="seu@email.com"
+          placeholderTextColor={palette.textMuted}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -90,6 +92,7 @@ export default function Login() {
         <TextInput
           style={styles.input}
           placeholder="********"
+          placeholderTextColor={palette.textMuted}
           value={senha}
           onChangeText={(texto) => setSenha(texto.replace(/\s/g, ''))}
           secureTextEntry
@@ -97,7 +100,7 @@ export default function Login() {
 
         <TouchableOpacity style={styles.button} onPress={handleEntrar} disabled={carregando}>
           {carregando ? (
-            <ActivityIndicator color="#FFF" />
+            <ActivityIndicator color={palette.white} />
           ) : (
             <Text style={styles.buttonText}>Entrar</Text>
           )}

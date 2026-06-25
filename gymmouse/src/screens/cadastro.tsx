@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { API_URL } from '../config/api';
-import { styles } from './styles';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Cadastro() {
     const navigation = useNavigation<any>();
+    const { styles, palette } = useTheme();
     const [nomecompleto, setNomeCompleto] = useState('');
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
@@ -60,7 +61,7 @@ export default function Cadastro() {
 
             if (resposta.ok) {
                 const idUsuario = typeof dadosDoUsuario === 'object' && dadosDoUsuario !== null ? dadosDoUsuario.id : '';
-                Alert.alert('Sucesso!', `Conta criada! Bem-vindo ao GymMouse.\nSeu ID e: ${idUsuario}`);
+                Alert.alert('Sucesso!', `Conta criada! Bem-vindo ao Streaks.\nSeu ID e: ${idUsuario}`);
 
                 setNomeCompleto('');
                 setEmail('');
@@ -91,10 +92,10 @@ export default function Cadastro() {
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.card}>
                 <View style={styles.logoContainer}>
-                    <Text style={{ fontSize: 40 }}>ratinho</Text>
+                    <Image source={require('../../assets/images/logoChama.png')} style={styles.logoImage} />
                 </View>
 
-                <Text style={styles.title}>GymMouse</Text>
+                <Text style={styles.title}>Streaks</Text>
                 <Text style={styles.subtitle}>Mantenha-se focado em seus exercicios</Text>
 
                 <Text style={styles.label}>Nome</Text>
@@ -103,6 +104,7 @@ export default function Cadastro() {
                     value={nomecompleto}
                     onChangeText={setNomeCompleto}
                     placeholder="Digite o seu nome completo"
+                    placeholderTextColor={palette.textMuted}
                 />
 
                 <Text style={styles.label}>Email</Text>
@@ -113,6 +115,7 @@ export default function Cadastro() {
                     placeholder="Digite o seu@email"
                     autoCapitalize="none"
                     keyboardType="email-address"
+                    placeholderTextColor={palette.textMuted}
                 />
 
                 <Text style={styles.label}>Senha</Text>
@@ -122,6 +125,7 @@ export default function Cadastro() {
                     onChangeText={(texto) => setSenha(texto.replace(/\s/g, ''))}
                     placeholder="Digite sua senha"
                     secureTextEntry={true}
+                    placeholderTextColor={palette.textMuted}
                 />
 
                 <Text style={styles.label}>Confirmar Senha</Text>
@@ -131,6 +135,7 @@ export default function Cadastro() {
                     onChangeText={(texto) => setConfirmaSenha(texto.replace(/\s/g, ''))}
                     placeholder="Confirme sua senha"
                     secureTextEntry={true}
+                    placeholderTextColor={palette.textMuted}
                 />
 
                 {erroSenha !== '' && (

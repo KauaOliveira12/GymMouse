@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import {View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert, Modal, TextInput, Pressable, Image, ScrollView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert, Modal, TextInput, Pressable, Image, ScrollView, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import MapWrapper from './MapWrapper';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { API_URL } from '../config/api';
-import { styles } from './styles';
+import { useTheme } from '../context/ThemeContext';
 import { POSTS_GLOBAIS } from './checkin';
 
 const aguardarFechamentoModal = () =>
@@ -24,11 +24,11 @@ const lerResposta = async (resposta: Response) => {
 function mapRankingLinha(raw: any, index: number, usuarioLogadoId: string | null) {
   const uid = raw.usuarioId ?? raw.idUsuario ?? raw.id;
   const nome =
-      raw.nomeUsuario ?? raw.nome ?? raw.usuarioNome ?? raw.usuario?.nome ?? 'Participante';
+    raw.nomeUsuario ?? raw.nome ?? raw.usuarioNome ?? raw.usuario?.nome ?? 'Participante';
   const pos = raw.posicao ?? raw.pos ?? raw.rank ?? raw.colocacao ?? index + 1;
   const pontos = Number(raw.pontosDesdeEntrada ?? raw.pontos ?? raw.pontuacao ?? raw.score ?? 0);
   const destaque =
-      usuarioLogadoId != null && uid != null && String(uid) === String(usuarioLogadoId);
+    usuarioLogadoId != null && uid != null && String(uid) === String(usuarioLogadoId);
 
   return {
     id: String(uid ?? `idx-${index}`),
@@ -52,11 +52,11 @@ function textoRegrasPontuacao(grupo: any): string {
 function idCriadorDoGrupo(grupo: any): string | null {
   if (!grupo || typeof grupo !== 'object') return null;
   const c =
-      grupo.criadorId ??
-      grupo.criador?.id ??
-      grupo.idCriador ??
-      grupo.usuarioCriadorId ??
-      grupo.criadorUsuarioId;
+    grupo.criadorId ??
+    grupo.criador?.id ??
+    grupo.idCriador ??
+    grupo.usuarioCriadorId ??
+    grupo.criadorUsuarioId;
   if (c == null) return null;
   return String(c);
 }
@@ -64,6 +64,7 @@ function idCriadorDoGrupo(grupo: any): string | null {
 export default function Grupo() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { styles, palette } = useTheme();
   const params = route.params ?? {};
 
   const grupoId = params.id != null ? String(params.id) : 'geral';
@@ -114,17 +115,17 @@ export default function Grupo() {
 
   const idCriador = idCriadorDoGrupo(grupoApi);
   const isCriador =
-      podeUsarApi && idCriador != null && String(idCriador) === String(usuarioLogadoId);
+    podeUsarApi && idCriador != null && String(idCriador) === String(usuarioLogadoId);
 
   const nomeExibicao = grupoApi?.nome != null ? String(grupoApi.nome) : String(params.nome ?? 'Grupo');
   const descricaoExibicao =
-      grupoApi?.descricao != null ? String(grupoApi.descricao) : String(params.descricao ?? '');
+    grupoApi?.descricao != null ? String(grupoApi.descricao) : String(params.descricao ?? '');
   const codigoAcesso =
-      grupoApi?.codigoAcesso != null ? String(grupoApi.codigoAcesso) : '';
+    grupoApi?.codigoAcesso != null ? String(grupoApi.codigoAcesso) : '';
   const imagemCapaExibicao =
-      grupoApi?.imagemCapa != null && String(grupoApi.imagemCapa).trim() !== ''
-          ? String(grupoApi.imagemCapa)
-          : null;
+    grupoApi?.imagemCapa != null && String(grupoApi.imagemCapa).trim() !== ''
+      ? String(grupoApi.imagemCapa)
+      : null;
   const regrasPontuacaoTexto = grupoApi ? textoRegrasPontuacao(grupoApi) : null;
 
   const membrosExibicao = (() => {
@@ -162,7 +163,7 @@ export default function Grupo() {
     if (resultado.canceled) return;
     const asset = resultado.assets[0];
     setImagemCapaEdicao(
-        asset.base64 ? `data:${asset.mimeType ?? 'image/jpeg'};base64,${asset.base64}` : asset.uri
+      asset.base64 ? `data:${asset.mimeType ?? 'image/jpeg'};base64,${asset.base64}` : asset.uri
     );
   };
 
@@ -207,8 +208,8 @@ export default function Grupo() {
     setMenuVisivel(false);
     if (!podeUsarApi) {
       Alert.alert(
-          'Sessao',
-          'Nao foi possivel identificar seu usuario. Volte para Meus Grupos e abra o grupo apos o login.'
+        'Sessao',
+        'Nao foi possivel identificar seu usuario. Volte para Meus Grupos e abra o grupo apos o login.'
       );
       return;
     }
@@ -230,8 +231,8 @@ export default function Grupo() {
     setExcluindo(true);
     try {
       const resposta = await fetch(
-          `${API_URL}/api/grupos/${grupoId}?usuarioId=${encodeURIComponent(usuarioLogadoId)}`,
-          { method: 'DELETE' }
+        `${API_URL}/api/grupos/${grupoId}?usuarioId=${encodeURIComponent(usuarioLogadoId)}`,
+        { method: 'DELETE' }
       );
 
       setConfirmarExcluirVisivel(false);
@@ -243,9 +244,9 @@ export default function Grupo() {
 
       const dados = await lerResposta(resposta);
       const msg =
-          typeof dados === 'object' && dados !== null
-              ? dados.mensagem || dados.message || dados.error
-              : dados;
+        typeof dados === 'object' && dados !== null
+          ? dados.mensagem || dados.message || dados.error
+          : dados;
       if (resposta.status === 403) {
         Alert.alert('Erro', String(msg || 'Somente o criador pode excluir este grupo.'));
         return;
@@ -295,9 +296,9 @@ export default function Grupo() {
 
       const dados = await lerResposta(resposta);
       const msg =
-          typeof dados === 'object' && dados !== null
-              ? dados.mensagem || dados.message || dados.error
-              : dados;
+        typeof dados === 'object' && dados !== null
+          ? dados.mensagem || dados.message || dados.error
+          : dados;
       if (resposta.status === 404) {
         Alert.alert('Erro', String(msg || 'Grupo nao encontrado ou voce nao e membro.'));
         return;
@@ -357,9 +358,9 @@ export default function Grupo() {
 
       if (!resposta.ok) {
         const msg =
-            typeof dados === 'object' && dados !== null
-                ? dados.mensagem || dados.message || dados.error
-                : dados;
+          typeof dados === 'object' && dados !== null
+            ? dados.mensagem || dados.message || dados.error
+            : dados;
         Alert.alert('Erro', String(msg || `Nao foi possivel atualizar (${resposta.status}).`));
         return;
       }
@@ -390,9 +391,8 @@ export default function Grupo() {
     try {
       const urlGrupo = `${API_URL}/api/grupos/${grupoId}`;
       const urlRanking = `${API_URL}/api/grupos/${grupoId}/ranking`;
-      const urlCheckins = `${API_URL}/api/grupos/${grupoId}/checkins${
-          usuarioLogadoId ? `?usuarioId=${usuarioLogadoId}` : ''
-      }`;
+      const urlCheckins = `${API_URL}/api/grupos/${grupoId}/checkins${usuarioLogadoId ? `?usuarioId=${usuarioLogadoId}` : ''
+        }`;
 
       const [resGrupo, resRanking, resCheckins] = await Promise.all([
         fetch(urlGrupo),
@@ -406,9 +406,9 @@ export default function Grupo() {
 
       if (!resGrupo.ok) {
         const msg =
-            typeof dadosGrupo === 'object' && dadosGrupo !== null
-                ? dadosGrupo.mensagem || dadosGrupo.message
-                : dadosGrupo;
+          typeof dadosGrupo === 'object' && dadosGrupo !== null
+            ? dadosGrupo.mensagem || dadosGrupo.message
+            : dadosGrupo;
         Alert.alert('Grupo', String(msg || `Erro ${resGrupo.status}`));
         setGrupoApi(null);
       } else if (dadosGrupo && typeof dadosGrupo === 'object') {
@@ -444,28 +444,28 @@ export default function Grupo() {
   }, [grupoId, usuarioLogadoId]);
 
   useFocusEffect(
-      useCallback(() => {
-        let ativo = true;
+    useCallback(() => {
+      let ativo = true;
 
-        const run = async () => {
-          await carregarDoServidor();
-          if (!ativo) return;
-        };
+      const run = async () => {
+        await carregarDoServidor();
+        if (!ativo) return;
+      };
 
-        void run();
-        return () => {
-          ativo = false;
-        };
-      }, [carregarDoServidor, grupoId])
+      void run();
+      return () => {
+        ativo = false;
+      };
+    }, [carregarDoServidor, grupoId])
   );
 
   const atualizarCheckinNaLista = (checkinAtualizado: any) => {
     if (!checkinAtualizado || checkinAtualizado.id == null) return;
     setCheckinsLocais((atuais) =>
-        atuais.map((item) => (String(item.id) === String(checkinAtualizado.id) ? { ...item, ...checkinAtualizado } : item))
+      atuais.map((item) => (String(item.id) === String(checkinAtualizado.id) ? { ...item, ...checkinAtualizado } : item))
     );
     setCheckinSelecionado((atual: any) =>
-        atual && String(atual.id) === String(checkinAtualizado.id) ? { ...atual, ...checkinAtualizado } : atual
+      atual && String(atual.id) === String(checkinAtualizado.id) ? { ...atual, ...checkinAtualizado } : atual
     );
   };
 
@@ -524,23 +524,23 @@ export default function Grupo() {
   };
 
   const adicionarRespostaAoComentario = (lista: any[], resposta: any): any[] =>
-      lista.map((comentario) => {
-        if (String(comentario.id) === String(resposta.comentarioPaiId)) {
-          return {
-            ...comentario,
-            respostas: [...(Array.isArray(comentario.respostas) ? comentario.respostas : []), resposta],
-          };
-        }
+    lista.map((comentario) => {
+      if (String(comentario.id) === String(resposta.comentarioPaiId)) {
+        return {
+          ...comentario,
+          respostas: [...(Array.isArray(comentario.respostas) ? comentario.respostas : []), resposta],
+        };
+      }
 
-        if (Array.isArray(comentario.respostas) && comentario.respostas.length > 0) {
-          return {
-            ...comentario,
-            respostas: adicionarRespostaAoComentario(comentario.respostas, resposta),
-          };
-        }
+      if (Array.isArray(comentario.respostas) && comentario.respostas.length > 0) {
+        return {
+          ...comentario,
+          respostas: adicionarRespostaAoComentario(comentario.respostas, resposta),
+        };
+      }
 
-        return comentario;
-      });
+      return comentario;
+    });
 
   const enviarComentario = async () => {
     const texto = textoComentario.trim();
@@ -557,8 +557,8 @@ export default function Grupo() {
     try {
       const comentarioPaiId = comentarioRespondendo?.id;
       const url = comentarioPaiId
-          ? `${API_URL}/api/checkins/${checkinSelecionado.id}/comentarios/${comentarioPaiId}/respostas`
-          : `${API_URL}/api/checkins/${checkinSelecionado.id}/comentarios`;
+        ? `${API_URL}/api/checkins/${checkinSelecionado.id}/comentarios/${comentarioPaiId}/respostas`
+        : `${API_URL}/api/checkins/${checkinSelecionado.id}/comentarios`;
       const resposta = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -572,7 +572,7 @@ export default function Grupo() {
       }
 
       setComentarios((atuais) =>
-          dados?.comentarioPaiId ? adicionarRespostaAoComentario(atuais, dados) : [...atuais, dados]
+        dados?.comentarioPaiId ? adicionarRespostaAoComentario(atuais, dados) : [...atuais, dados]
       );
       setTextoComentario('');
       setComentarioRespondendo(null);
@@ -593,33 +593,33 @@ export default function Grupo() {
     const indentacao = Math.min(nivel * 18, 54);
 
     return (
-        <View style={{ marginLeft: indentacao, marginBottom: 14 }}>
-          <View style={{ flexDirection: 'row' }}>
-            <View style={[styles.postAvatar, { width: 34, height: 34, marginRight: 10 }]}>
-              <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>{iniciais}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ backgroundColor: '#F5F5F5', borderRadius: 8, padding: 10 }}>
-                <Text style={{ color: '#0B2046', fontWeight: 'bold', marginBottom: 4 }}>{nome}</Text>
-                <Text style={{ color: '#333', lineHeight: 20 }}>{item.texto}</Text>
-              </View>
-              <TouchableOpacity
-                  style={{ alignSelf: 'flex-start', marginTop: 6, paddingVertical: 4 }}
-                  onPress={() => {
-                    setComentarioRespondendo(item);
-                    setTextoComentario('');
-                  }}
-              >
-                <Text style={{ color: '#FF8C00', fontWeight: '700', fontSize: 12 }}>Responder</Text>
-              </TouchableOpacity>
-            </View>
+      <View style={{ marginLeft: indentacao, marginBottom: 14 }}>
+        <View style={{ flexDirection: 'row' }}>
+          <View style={[styles.postAvatar, { width: 34, height: 34, marginRight: 10 }]}>
+            <Text style={{ color: palette.white, fontWeight: 'bold', fontSize: 12 }}>{iniciais}</Text>
           </View>
-          {respostas.map((resposta: any) => (
-              <View key={String(resposta.id)} style={{ marginTop: 8 }}>
-                {renderComentario(resposta, nivel + 1)}
-              </View>
-          ))}
+          <View style={{ flex: 1 }}>
+            <View style={{ backgroundColor: palette.surfaceSecondary, borderRadius: 8, padding: 10 }}>
+              <Text style={{ color: palette.title, fontWeight: 'bold', marginBottom: 4 }}>{nome}</Text>
+              <Text style={{ color: palette.text, lineHeight: 20 }}>{item.texto}</Text>
+            </View>
+            <TouchableOpacity
+              style={{ alignSelf: 'flex-start', marginTop: 6, paddingVertical: 4 }}
+              onPress={() => {
+                setComentarioRespondendo(item);
+                setTextoComentario('');
+              }}
+            >
+              <Text style={{ color: palette.accent, fontWeight: '700', fontSize: 12 }}>Responder</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+        {respostas.map((resposta: any) => (
+          <View key={String(resposta.id)} style={{ marginTop: 8 }}>
+            {renderComentario(resposta, nivel + 1)}
+          </View>
+        ))}
+      </View>
     );
   };
 
@@ -628,74 +628,74 @@ export default function Grupo() {
     const iniciais = nome.length >= 2 ? nome.substring(0, 2).toUpperCase() : '?';
     const curtido = Boolean(item.curtido);
     return (
-        <View style={styles.postCard}>
-          <View style={styles.postHeader}>
-            <View
-                style={[styles.postAvatar, { backgroundColor: nome === 'Voce' || nome === 'Você' ? '#FF8C00' : '#0B2046' }]}
-            >
-              <Text style={{ color: '#FFF', fontWeight: 'bold' }}>{iniciais}</Text>
-            </View>
-            <View>
-              <Text style={{ fontWeight: 'bold', color: '#0B2046' }}>{nome}</Text>
-              <Text style={{ color: '#999', fontSize: 12 }}>{item.tempo ?? ''}</Text>
-            </View>
+      <View style={styles.postCard}>
+        <View style={styles.postHeader}>
+          <View
+            style={[styles.postAvatar, { backgroundColor: nome === 'Voce' || nome === 'Você' ? palette.accent : palette.title }]}
+          >
+            <Text style={{ color: palette.white, fontWeight: 'bold' }}>{iniciais}</Text>
           </View>
-
-          {item.imagem ? (
-              <Image
-                  source={{ uri: item.imagem }}
-                  style={[styles.postImagePlaceholder, { height: 180, backgroundColor: '#F9F9F9' }]}
-              />
-          ) : (
-              <View
-                  style={[
-                    styles.postImagePlaceholder,
-                    { backgroundColor: '#F9F9F9', height: 120, justifyContent: 'center', alignItems: 'center' },
-                  ]}
-              >
-                <Feather name="image" size={32} color="#DDD" />
-              </View>
-          )}
-
-          <View style={{ padding: 15 }}>
-            <Text style={styles.postTitle}>{item.titulo ?? ''}</Text>
-            {item.desc ? <Text style={styles.postDesc}>{item.desc}</Text> : null}
-
-            {/* --- MAPA ESTÁTICO DO CHECK-IN --- */}
-            {item.latitude && item.longitude && (
-                <View style={{ marginTop: 12 }}>
-                  {item.nomeLocal && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                        <Feather name="map-pin" size={14} color="#FF8C00" />
-                        <Text style={{ marginLeft: 4, color: '#666', fontSize: 12, fontWeight: 'bold' }}>
-                          {item.nomeLocal}
-                        </Text>
-                      </View>
-                  )}
-                  <View style={{ borderRadius: 8, overflow: 'hidden', height: 120 }}>
-                    <MapWrapper latitude={Number(item.latitude)} longitude={Number(item.longitude)} />
-                  </View>
-                </View>
-            )}
-            {/* --------------------------------- */}
-
-          </View>
-
-          <View style={styles.postActions}>
-            <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', marginRight: 20, opacity: curtindoId === String(item.id) ? 0.6 : 1 }}
-                onPress={() => void handleCurtir(item)}
-                disabled={curtindoId === String(item.id)}
-            >
-              <Feather name="heart" size={18} color={curtido ? '#FF3B30' : '#666'} />
-              <Text style={{ color: curtido ? '#FF3B30' : '#666', marginLeft: 5 }}>{item.likes ?? 0}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => void abrirComentarios(item)}>
-              <Feather name="message-circle" size={18} color="#666" />
-              <Text style={{ color: '#666', marginLeft: 5 }}>{item.comments ?? 0}</Text>
-            </TouchableOpacity>
+          <View>
+            <Text style={{ fontWeight: 'bold', color: palette.title }}>{nome}</Text>
+            <Text style={{ color: palette.textMuted, fontSize: 12 }}>{item.tempo ?? ''}</Text>
           </View>
         </View>
+
+        {item.imagem ? (
+          <Image
+            source={{ uri: item.imagem }}
+            style={[styles.postImagePlaceholder, { height: 180, backgroundColor: palette.surfaceSecondary }]}
+          />
+        ) : (
+          <View
+            style={[
+              styles.postImagePlaceholder,
+              { backgroundColor: palette.surfaceSecondary, height: 120, justifyContent: 'center', alignItems: 'center' },
+            ]}
+          >
+            <Feather name="image" size={32} color={palette.imagePlaceholder} />
+          </View>
+        )}
+
+        <View style={{ padding: 15 }}>
+          <Text style={styles.postTitle}>{item.titulo ?? ''}</Text>
+          {item.desc ? <Text style={styles.postDesc}>{item.desc}</Text> : null}
+
+          {/* --- MAPA ESTÁTICO DO CHECK-IN --- */}
+          {item.latitude && item.longitude && (
+            <View style={{ marginTop: 12 }}>
+              {item.nomeLocal && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                  <Feather name="map-pin" size={14} color={palette.accent} />
+                  <Text style={{ marginLeft: 4, color: palette.textSecondary, fontSize: 12, fontWeight: 'bold' }}>
+                    {item.nomeLocal}
+                  </Text>
+                </View>
+              )}
+              <View style={{ borderRadius: 8, overflow: 'hidden', height: 120 }}>
+                <MapWrapper latitude={Number(item.latitude)} longitude={Number(item.longitude)} />
+              </View>
+            </View>
+          )}
+          {/* --------------------------------- */}
+
+        </View>
+
+        <View style={styles.postActions}>
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', marginRight: 20, opacity: curtindoId === String(item.id) ? 0.6 : 1 }}
+            onPress={() => void handleCurtir(item)}
+            disabled={curtindoId === String(item.id)}
+          >
+            <Feather name="heart" size={18} color={curtido ? '#FF3B30' : palette.textSecondary} />
+            <Text style={{ color: curtido ? '#FF3B30' : palette.textSecondary, marginLeft: 5 }}>{item.likes ?? 0}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => void abrirComentarios(item)}>
+            <Feather name="message-circle" size={18} color={palette.textSecondary} />
+            <Text style={{ color: palette.textSecondary, marginLeft: 5 }}>{item.comments ?? 0}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     );
   };
 
@@ -703,490 +703,497 @@ export default function Grupo() {
     const nome = item.nome || '?';
     const iniciais = nome.length >= 2 ? nome.substring(0, 2).toUpperCase() : '?';
     return (
-        <View style={[styles.rankCard, item.destaque && styles.rankCardDestaque]}>
-          <Text style={styles.rankPos}>{item.pos}</Text>
-          <View
-              style={[styles.postAvatar, { backgroundColor: item.destaque ? '#FF8C00' : '#E0E0E0', width: 40, height: 40 }]}
-          >
-            <Text style={{ color: item.destaque ? '#FFF' : '#333', fontWeight: 'bold' }}>{iniciais}</Text>
-          </View>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={{ fontWeight: 'bold', color: item.destaque ? '#FF8C00' : '#0B2046', fontSize: 16 }}>
-              {nome}
-            </Text>
-            <Text style={{ color: '#666' }}>{item.pontos} pontos</Text>
-          </View>
-          {item.destaque && (
-              <View style={{ backgroundColor: '#FF8C00', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
-                <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold' }}>Voce</Text>
-              </View>
-          )}
+      <View style={[styles.rankCard, item.destaque && styles.rankCardDestaque]}>
+        <Text style={styles.rankPos}>{item.pos}</Text>
+        <View
+          style={[styles.postAvatar, { backgroundColor: item.destaque ? palette.accent : palette.avatarAlt, width: 40, height: 40 }]}
+        >
+          <Text style={{ color: item.destaque ? palette.white : palette.text, fontWeight: 'bold' }}>{iniciais}</Text>
         </View>
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Text style={{ fontWeight: 'bold', color: item.destaque ? palette.accent : palette.title, fontSize: 16 }}>
+            {nome}
+          </Text>
+          <Text style={{ color: palette.textSecondary }}>{item.pontos} pontos</Text>
+        </View>
+        {item.destaque && (
+          <View style={{ backgroundColor: palette.accent, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+            <Text style={{ color: palette.white, fontSize: 10, fontWeight: 'bold' }}>Voce</Text>
+          </View>
+        )}
+      </View>
     );
   };
 
   return (
-      <View style={styles.homeContainer}>
-        <View style={[styles.grupoHeaderTop, { justifyContent: 'space-between' }]}>
-          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 12, bottom: 12, right: 8 }}>
-            <Feather name="chevron-left" size={28} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={[styles.grupoHeaderTitle, { flex: 1, minWidth: 0, marginRight: 8 }]} numberOfLines={1}>
-            {nomeExibicao}
-          </Text>
-          {grupoIdNumerico && (
-              <Pressable
-                  onPress={abrirMenu}
-                  hitSlop={{ top: 16, bottom: 16, left: 12, right: 12 }}
-                  style={({ pressed }) => [{ padding: 8, opacity: pressed ? 0.6 : 1 }]}
-              >
-                <Feather name="more-vertical" size={24} color="#FFF" />
-              </Pressable>
-          )}
-          <TouchableOpacity
-              onPress={() => navigation.navigate('Checkin', { id: grupoId, usuarioId: usuarioLogadoId })}
-              hitSlop={{ top: 12, bottom: 12, left: 8 }}
-              style={{ padding: 6 }}
+    <View style={styles.homeContainer}>
+      <View style={[styles.grupoHeaderTop, { justifyContent: 'space-between' }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 12, bottom: 12, right: 8 }}>
+          <Feather name="chevron-left" size={28} color={palette.headerText} />
+        </TouchableOpacity>
+        <Text style={[styles.grupoHeaderTitle, { flex: 1, minWidth: 0, marginRight: 8 }]} numberOfLines={1}>
+          {nomeExibicao}
+        </Text>
+        {grupoIdNumerico && (
+          <Pressable
+            onPress={abrirMenu}
+            hitSlop={{ top: 16, bottom: 16, left: 12, right: 12 }}
+            style={({ pressed }) => [{ padding: 8, opacity: pressed ? 0.6 : 1 }]}
           >
-            <Feather name="camera" size={22} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={[styles.grupoCover, imagemCapaExibicao ? { height: 180 } : { height: 120 }]}>
-          {imagemCapaExibicao && (
-              <>
-                <Image source={{ uri: imagemCapaExibicao }} style={styles.grupoCoverImage} resizeMode="cover" />
-                <View style={styles.grupoCoverOverlay} />
-              </>
-          )}
-          {carregandoApi ? (
-              <ActivityIndicator color="#FFF" style={{ zIndex: 1 }} />
-          ) : (
-              <View style={styles.grupoCoverContent}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-                  <Feather name="users" size={16} color="#FFF" />
-                  <Text style={[styles.grupoCoverText, imagemCapaExibicao && { color: '#FFF' }]}>
-                    {membrosExibicao} membro(s)
-                  </Text>
-                  <Feather name="award" size={16} color="#FFF" style={{ marginLeft: 10 }} />
-                  <Text style={[styles.grupoCoverText, imagemCapaExibicao && { color: '#FFF' }]}>
-                    {pontosTotaisRanking} pts (ranking)
-                  </Text>
-                </View>
-                {regrasPontuacaoTexto && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-                      <Feather name="zap" size={14} color="#FF8C00" />
-                      <Text
-                          style={[
-                            styles.grupoCoverText,
-                            { marginTop: 0, marginLeft: 6, color: imagemCapaExibicao ? '#FFE0B2' : '#FF8C00' },
-                          ]}
-                      >
-                        {regrasPontuacaoTexto}
-                      </Text>
-                    </View>
-                )}
-                {descricaoExibicao !== '' && (
-                    <Text
-                        style={[styles.grupoCoverText, { marginTop: 10, opacity: 0.95, color: imagemCapaExibicao ? '#EEE' : '#CCC' }]}
-                        numberOfLines={4}
-                    >
-                      {descricaoExibicao}
-                    </Text>
-                )}
-                {codigoAcesso !== '' && (
-                    <Text
-                        style={[
-                          styles.grupoCoverText,
-                          { marginTop: 8, fontSize: 12, opacity: 0.85, color: imagemCapaExibicao ? '#DDD' : '#CCC' },
-                        ]}
-                    >
-                      Codigo: {codigoAcesso}
-                    </Text>
-                )}
-              </View>
-          )}
-        </View>
-
-        <View style={styles.tabsContainer}>
-          <TouchableOpacity
-              style={[styles.tab, abaAtiva === 'checkins' && styles.tabActive]}
-              onPress={() => setAbaAtiva('checkins')}
-          >
-            <Feather name="grid" size={16} color={abaAtiva === 'checkins' ? '#FF8C00' : '#666'} />
-            <Text style={[styles.tabText, abaAtiva === 'checkins' && styles.tabTextActive, { marginLeft: 6 }]}>
-              Check-ins
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-              style={[styles.tab, abaAtiva === 'ranking' && styles.tabActive]}
-              onPress={() => setAbaAtiva('ranking')}
-          >
-            <Feather name="trending-up" size={16} color={abaAtiva === 'ranking' ? '#FF8C00' : '#666'} />
-            <Text style={[styles.tabText, abaAtiva === 'ranking' && styles.tabTextActive, { marginLeft: 6 }]}>
-              Ranking
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={{ flex: 1, minHeight: 0 }}>
-          {abaAtiva === 'checkins' ? (
-              <FlatList
-                  style={{ flex: 1 }}
-                  data={checkinsLocais}
-                  keyExtractor={(item) => String(item.id)}
-                  renderItem={renderCheckin}
-                  keyboardShouldPersistTaps="handled"
-                  contentContainerStyle={{ padding: 15, paddingBottom: 40 }}
-                  ListEmptyComponent={
-                    <View style={{ alignItems: 'center', marginTop: 48, paddingHorizontal: 20 }}>
-                      <Feather name="edit-3" size={40} color="#DDD" />
-                      <Text style={{ color: '#AAA', fontSize: 14, marginTop: 12, textAlign: 'center' }}>
-                        Nenhum check-in neste grupo ainda.
-                      </Text>
-                    </View>
-                  }
-              />
-          ) : (
-              <FlatList
-                  style={{ flex: 1 }}
-                  data={rankingApi}
-                  keyExtractor={(item) => item.id}
-                  renderItem={renderRanking}
-                  keyboardShouldPersistTaps="handled"
-                  contentContainerStyle={{ padding: 15, paddingBottom: 40 }}
-                  ListEmptyComponent={
-                    <View style={{ alignItems: 'center', marginTop: 48 }}>
-                      <Feather name="bar-chart-2" size={40} color="#EEE" />
-                      <Text style={{ color: '#AAA', fontSize: 14, marginTop: 10, textAlign: 'center', paddingHorizontal: 20 }}>
-                        {carregandoApi ? 'Carregando ranking...' : 'Nenhum dado de ranking ainda.'}
-                      </Text>
-                    </View>
-                  }
-              />
-          )}
-        </View>
-
-        {/* Restante dos modais permanecem sem alteração visual */}
-        <Modal transparent visible={comentariosVisivel} animationType="slide" onRequestClose={() => setComentariosVisivel(false)}>
-          <Pressable style={styles.modalOverlay} onPress={() => !enviandoComentario && setComentariosVisivel(false)}>
-            <Pressable style={[styles.modalContainer, { maxHeight: '82%' }]} onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Comentarios</Text>
-                <TouchableOpacity onPress={() => !enviandoComentario && setComentariosVisivel(false)}>
-                  <Feather name="x" size={24} color="#666" />
-                </TouchableOpacity>
-              </View>
-
-              {checkinSelecionado && (
-                  <View style={{ marginBottom: 12 }}>
-                    <Text style={{ color: '#0B2046', fontWeight: 'bold' }}>{checkinSelecionado.titulo}</Text>
-                    <Text style={{ color: '#666', fontSize: 13, marginTop: 4 }} numberOfLines={2}>
-                      {checkinSelecionado.desc}
-                    </Text>
-                  </View>
-              )}
-
-              {carregandoComentarios ? (
-                  <ActivityIndicator color="#FF8C00" style={{ marginVertical: 24 }} />
-              ) : (
-                  <FlatList
-                      data={comentarios}
-                      keyExtractor={(item) => String(item.id)}
-                      style={{ maxHeight: 260 }}
-                      keyboardShouldPersistTaps="handled"
-                      ListEmptyComponent={
-                        <Text style={{ color: '#999', textAlign: 'center', marginVertical: 24 }}>
-                          Nenhum comentario ainda.
-                        </Text>
-                      }
-                      renderItem={({ item }) => renderComentario(item)}
-                  />
-              )}
-
-              {comentarioRespondendo && (
-                  <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        backgroundColor: '#FFF3E0',
-                        borderRadius: 8,
-                        paddingHorizontal: 10,
-                        paddingVertical: 8,
-                        marginTop: 10,
-                      }}
-                  >
-                    <Text style={{ color: '#0B2046', flex: 1 }} numberOfLines={1}>
-                      Respondendo {comentarioRespondendo.nome ?? 'comentario'}
-                    </Text>
-                    <TouchableOpacity onPress={() => setComentarioRespondendo(null)}>
-                      <Feather name="x" size={18} color="#666" />
-                    </TouchableOpacity>
-                  </View>
-              )}
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
-                <TextInput
-                    style={[styles.input, { flex: 1, marginBottom: 0, marginRight: 10 }]}
-                    value={textoComentario}
-                    onChangeText={setTextoComentario}
-                    placeholder={comentarioRespondendo ? 'Escreva uma resposta' : 'Escreva um comentario'}
-                    editable={!enviandoComentario}
-                />
-                <TouchableOpacity
-                    style={{
-                      width: 46,
-                      height: 46,
-                      borderRadius: 8,
-                      backgroundColor: '#FF8C00',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: enviandoComentario ? 0.6 : 1,
-                    }}
-                    onPress={() => void enviarComentario()}
-                    disabled={enviandoComentario}
-                >
-                  <Feather name="send" size={20} color="#FFF" />
-                </TouchableOpacity>
-              </View>
-            </Pressable>
+            <Feather name="more-vertical" size={24} color={palette.headerText} />
           </Pressable>
-        </Modal>
-
-        <Modal transparent visible={menuVisivel} animationType="fade" onRequestClose={() => setMenuVisivel(false)}>
-          <Pressable style={styles.modalOverlay} onPress={() => setMenuVisivel(false)}>
-            <Pressable style={[styles.modalContainer, { padding: 0, overflow: 'hidden' }]} onPress={(e) => e.stopPropagation()}>
-              <Text style={[styles.modalTitle, { padding: 16, paddingBottom: 8 }]}>Opcoes</Text>
-              {isCriador && (
-                  <>
-                    <TouchableOpacity
-                        style={[styles.modalActionBtn, { borderBottomWidth: 1, borderBottomColor: '#EEE' }]}
-                        onPress={abrirEditar}
-                    >
-                      <Feather name="edit-2" size={20} color="#0B2046" style={styles.modalActionIcon} />
-                      <Text style={styles.modalActionText}>Editar grupo</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.modalActionBtn, { borderBottomWidth: 1, borderBottomColor: '#EEE' }]}
-                        onPress={abrirConfirmarExcluir}
-                    >
-                      <Feather name="trash-2" size={20} color="#FF3B30" style={styles.modalActionIcon} />
-                      <Text style={[styles.modalActionText, { color: '#FF3B30' }]}>Excluir grupo</Text>
-                    </TouchableOpacity>
-                  </>
-              )}
-              <TouchableOpacity style={styles.modalActionBtn} onPress={abrirConfirmarSair}>
-                <Feather name="log-out" size={20} color="#FF3B30" style={styles.modalActionIcon} />
-                <Text style={[styles.modalActionText, { color: '#FF3B30' }]}>Sair do grupo</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalActionBtn, { justifyContent: 'center' }]} onPress={() => setMenuVisivel(false)}>
-                <Text style={[styles.modalActionText, { color: '#999' }]}>Cancelar</Text>
-              </TouchableOpacity>
-            </Pressable>
-          </Pressable>
-        </Modal>
-
-        <Modal
-            transparent
-            visible={confirmarExcluirVisivel}
-            animationType="fade"
-            onRequestClose={() => !excluindo && setConfirmarExcluirVisivel(false)}
+        )}
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Chat', { id: grupoId, nome: nomeExibicao, usuarioId: usuarioLogadoId })}
+          hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+          style={{ padding: 6 }}
         >
-          <Pressable style={styles.modalOverlay} onPress={() => !excluindo && setConfirmarExcluirVisivel(false)}>
-            <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
-              <Text style={styles.modalTitle}>Excluir grupo?</Text>
-              <Text style={{ color: '#666', marginBottom: 20, lineHeight: 22 }}>
-                {`O grupo "${nomeExibicao}" será removido permanentemente, junto com membros, check-ins e ranking. Esta ação não pode ser desfeita.`}
-              </Text>
-              <TouchableOpacity
-                  style={[styles.button, { backgroundColor: '#FF3B30', marginBottom: 10 }]}
-                  onPress={() => void executarExcluirGrupo()}
-                  disabled={excluindo}
-              >
-                <Text style={styles.buttonText}>{excluindo ? 'Excluindo...' : 'Sim, excluir'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                  style={styles.button}
-                  onPress={() => setConfirmarExcluirVisivel(false)}
-                  disabled={excluindo}
-              >
-                <Text style={styles.buttonText}>Cancelar</Text>
-              </TouchableOpacity>
-            </Pressable>
-          </Pressable>
-        </Modal>
+          <Feather name="message-circle" size={22} color={palette.headerText} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Checkin', { id: grupoId, usuarioId: usuarioLogadoId })}
+          hitSlop={{ top: 12, bottom: 12, left: 8 }}
+          style={{ padding: 6 }}
+        >
+          <Feather name="camera" size={22} color={palette.headerText} />
+        </TouchableOpacity>
+      </View>
 
-        <Modal transparent visible={confirmarSairVisivel} animationType="fade" onRequestClose={() => setConfirmarSairVisivel(false)}>
-          <Pressable style={styles.modalOverlay} onPress={() => !saindo && setConfirmarSairVisivel(false)}>
-            <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
-              <Text style={styles.modalTitle}>Sair do grupo?</Text>
-              <Text style={{ color: '#666', marginBottom: 20, lineHeight: 22 }}>
-                Voce deixa de participar deste grupo no servidor.
+      <View style={[styles.grupoCover, imagemCapaExibicao ? { height: 180 } : { height: 120 }]}>
+        {imagemCapaExibicao && (
+          <>
+            <Image source={{ uri: imagemCapaExibicao }} style={styles.grupoCoverImage} resizeMode="cover" />
+            <View style={styles.grupoCoverOverlay} />
+          </>
+        )}
+        {carregandoApi ? (
+          <ActivityIndicator color={palette.headerText} style={{ zIndex: 1 }} />
+        ) : (
+          <View style={styles.grupoCoverContent}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+              <Feather name="users" size={16} color={palette.headerText} />
+              <Text style={[styles.grupoCoverText, imagemCapaExibicao && { color: palette.white }]}>
+                {membrosExibicao} membro(s)
               </Text>
-              <TouchableOpacity
-                  style={[styles.button, { backgroundColor: '#FF3B30', marginBottom: 10 }]}
-                  onPress={() => void executarSairDoGrupo()}
-                  disabled={saindo}
+              <Feather name="award" size={16} color={palette.headerText} style={{ marginLeft: 10 }} />
+              <Text style={[styles.grupoCoverText, imagemCapaExibicao && { color: palette.white }]}>
+                {pontosTotaisRanking} pts (ranking)
+              </Text>
+            </View>
+            {regrasPontuacaoTexto && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+                <Feather name="zap" size={14} color={palette.accent} />
+                <Text
+                  style={[
+                    styles.grupoCoverText,
+                    { marginTop: 0, marginLeft: 6, color: imagemCapaExibicao ? '#FFE0B2' : palette.accent },
+                  ]}
+                >
+                  {regrasPontuacaoTexto}
+                </Text>
+              </View>
+            )}
+            {descricaoExibicao !== '' && (
+              <Text
+                style={[styles.grupoCoverText, { marginTop: 10, opacity: 0.95, color: imagemCapaExibicao ? '#EEE' : '#CCC' }]}
+                numberOfLines={4}
               >
-                <Text style={styles.buttonText}>{saindo ? 'Saindo...' : 'Sim, sair'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.button} onPress={() => setConfirmarSairVisivel(false)} disabled={saindo}>
-                <Text style={styles.buttonText}>Cancelar</Text>
-              </TouchableOpacity>
-            </Pressable>
-          </Pressable>
-        </Modal>
+                {descricaoExibicao}
+              </Text>
+            )}
+            {codigoAcesso !== '' && (
+              <Text
+                style={[
+                  styles.grupoCoverText,
+                  { marginTop: 8, fontSize: 12, opacity: 0.85, color: imagemCapaExibicao ? '#DDD' : '#CCC' },
+                ]}
+              >
+                Codigo: {codigoAcesso}
+              </Text>
+            )}
+          </View>
+        )}
+      </View>
 
-        <Modal transparent visible={editarVisivel} animationType="slide" onRequestClose={() => setEditarVisivel(false)}>
-          <Pressable style={styles.modalOverlay} onPress={() => !salvandoEdicao && setEditarVisivel(false)}>
-            <Pressable style={[styles.modalContainer, { maxHeight: '90%' }]} onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Editar grupo</Text>
-                <TouchableOpacity onPress={() => !salvandoEdicao && setEditarVisivel(false)}>
-                  <Feather name="x" size={24} color="#999" />
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          style={[styles.tab, abaAtiva === 'checkins' && styles.tabActive]}
+          onPress={() => setAbaAtiva('checkins')}
+        >
+          <Feather name="grid" size={16} color={abaAtiva === 'checkins' ? palette.accent : palette.textSecondary} />
+          <Text style={[styles.tabText, abaAtiva === 'checkins' && styles.tabTextActive, { marginLeft: 6 }]}>
+            Check-ins
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, abaAtiva === 'ranking' && styles.tabActive]}
+          onPress={() => setAbaAtiva('ranking')}
+        >
+          <Feather name="trending-up" size={16} color={abaAtiva === 'ranking' ? palette.accent : palette.textSecondary} />
+          <Text style={[styles.tabText, abaAtiva === 'ranking' && styles.tabTextActive, { marginLeft: 6 }]}>
+            Ranking
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={{ flex: 1, minHeight: 0 }}>
+        {abaAtiva === 'checkins' ? (
+          <FlatList
+            style={{ flex: 1 }}
+            data={checkinsLocais}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={renderCheckin}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ padding: 15, paddingBottom: 40 }}
+            ListEmptyComponent={
+              <View style={{ alignItems: 'center', marginTop: 48, paddingHorizontal: 20 }}>
+                <Feather name="edit-3" size={40} color={palette.imagePlaceholder} />
+                <Text style={{ color: palette.textMuted, fontSize: 14, marginTop: 12, textAlign: 'center' }}>
+                  Nenhum check-in neste grupo ainda.
+                </Text>
+              </View>
+            }
+          />
+        ) : (
+          <FlatList
+            style={{ flex: 1 }}
+            data={rankingApi}
+            keyExtractor={(item) => item.id}
+            renderItem={renderRanking}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ padding: 15, paddingBottom: 40 }}
+            ListEmptyComponent={
+              <View style={{ alignItems: 'center', marginTop: 48 }}>
+                <Feather name="bar-chart-2" size={40} color={palette.border} />
+                <Text style={{ color: palette.textMuted, fontSize: 14, marginTop: 10, textAlign: 'center', paddingHorizontal: 20 }}>
+                  {carregandoApi ? 'Carregando ranking...' : 'Nenhum dado de ranking ainda.'}
+                </Text>
+              </View>
+            }
+          />
+        )}
+      </View>
+
+      {/* Restante dos modais permanecem sem alteração visual */}
+      <Modal transparent visible={comentariosVisivel} animationType="slide" onRequestClose={() => setComentariosVisivel(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => !enviandoComentario && setComentariosVisivel(false)}>
+          <Pressable style={[styles.modalContainer, { maxHeight: '82%' }]} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Comentarios</Text>
+              <TouchableOpacity onPress={() => !enviandoComentario && setComentariosVisivel(false)}>
+                <Feather name="x" size={24} color={palette.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {checkinSelecionado && (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={{ color: palette.title, fontWeight: 'bold' }}>{checkinSelecionado.titulo}</Text>
+                <Text style={{ color: palette.textSecondary, fontSize: 13, marginTop: 4 }} numberOfLines={2}>
+                  {checkinSelecionado.desc}
+                </Text>
+              </View>
+            )}
+
+            {carregandoComentarios ? (
+              <ActivityIndicator color={palette.accent} style={{ marginVertical: 24 }} />
+            ) : (
+              <FlatList
+                data={comentarios}
+                keyExtractor={(item) => String(item.id)}
+                style={{ maxHeight: 260 }}
+                keyboardShouldPersistTaps="handled"
+                ListEmptyComponent={
+                  <Text style={{ color: palette.textMuted, textAlign: 'center', marginVertical: 24 }}>
+                    Nenhum comentario ainda.
+                  </Text>
+                }
+                renderItem={({ item }) => renderComentario(item)}
+              />
+            )}
+
+            {comentarioRespondendo && (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  backgroundColor: palette.rankHighlight,
+                  borderRadius: 8,
+                  paddingHorizontal: 10,
+                  paddingVertical: 8,
+                  marginTop: 10,
+                }}
+              >
+                <Text style={{ color: palette.title, flex: 1 }} numberOfLines={1}>
+                  Respondendo {comentarioRespondendo.nome ?? 'comentario'}
+                </Text>
+                <TouchableOpacity onPress={() => setComentarioRespondendo(null)}>
+                  <Feather name="x" size={18} color={palette.textSecondary} />
                 </TouchableOpacity>
               </View>
-              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-                <Text style={styles.label}>Imagem de capa</Text>
-                <TouchableOpacity style={styles.grupoCapaPreview} onPress={() => setMenuCapaVisivel(true)} disabled={salvandoEdicao}>
-                  {imagemCapaEdicao ? (
-                      <Image source={{ uri: imagemCapaEdicao }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                  ) : (
-                      <>
-                        <Feather name="image" size={32} color="#BBB" />
-                        <Text style={{ color: '#999', marginTop: 8 }}>Toque para escolher uma capa</Text>
-                      </>
-                  )}
+            )}
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+              <TextInput
+                style={[styles.input, { flex: 1, marginBottom: 0, marginRight: 10 }]}
+                value={textoComentario}
+                onChangeText={setTextoComentario}
+                placeholder={comentarioRespondendo ? 'Escreva uma resposta' : 'Escreva um comentario'}
+                editable={!enviandoComentario}
+              />
+              <TouchableOpacity
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: 8,
+                  backgroundColor: palette.accent,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: enviandoComentario ? 0.6 : 1,
+                }}
+                onPress={() => void enviarComentario()}
+                disabled={enviandoComentario}
+              >
+                <Feather name="send" size={20} color={palette.headerText} />
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal transparent visible={menuVisivel} animationType="fade" onRequestClose={() => setMenuVisivel(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setMenuVisivel(false)}>
+          <Pressable style={[styles.modalContainer, { padding: 0, overflow: 'hidden' }]} onPress={(e) => e.stopPropagation()}>
+            <Text style={[styles.modalTitle, { padding: 16, paddingBottom: 8 }]}>Opcoes</Text>
+            {isCriador && (
+              <>
+                <TouchableOpacity
+                  style={[styles.modalActionBtn, { borderBottomWidth: 1, borderBottomColor: palette.border }]}
+                  onPress={abrirEditar}
+                >
+                  <Feather name="edit-2" size={20} color={palette.accent} style={styles.modalActionIcon} />
+                  <Text style={styles.modalActionText}>Editar grupo</Text>
                 </TouchableOpacity>
-                {imagemCapaEdicao && (
-                    <TouchableOpacity
-                        style={{ alignSelf: 'flex-start', marginBottom: 12, marginTop: -4 }}
-                        onPress={() => setImagemCapaEdicao(null)}
-                        disabled={salvandoEdicao}
-                    >
-                      <Text style={styles.linkText}>Remover capa</Text>
-                    </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalActionBtn, { borderBottomWidth: 1, borderBottomColor: palette.border }]}
+                  onPress={abrirConfirmarExcluir}
+                >
+                  <Feather name="trash-2" size={20} color="#FF3B30" style={styles.modalActionIcon} />
+                  <Text style={[styles.modalActionText, { color: '#FF3B30' }]}>Excluir grupo</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            <TouchableOpacity style={styles.modalActionBtn} onPress={abrirConfirmarSair}>
+              <Feather name="log-out" size={20} color="#FF3B30" style={styles.modalActionIcon} />
+              <Text style={[styles.modalActionText, { color: '#FF3B30' }]}>Sair do grupo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalActionBtn, { justifyContent: 'center' }]} onPress={() => setMenuVisivel(false)}>
+              <Text style={[styles.modalActionText, { color: palette.textMuted }]}>Cancelar</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={confirmarExcluirVisivel}
+        animationType="fade"
+        onRequestClose={() => !excluindo && setConfirmarExcluirVisivel(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => !excluindo && setConfirmarExcluirVisivel(false)}>
+          <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>Excluir grupo?</Text>
+            <Text style={{ color: palette.textSecondary, marginBottom: 20, lineHeight: 22 }}>
+              {`O grupo "${nomeExibicao}" será removido permanentemente, junto com membros, check-ins e ranking. Esta ação não pode ser desfeita.`}
+            </Text>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: '#FF3B30', marginBottom: 10 }]}
+              onPress={() => void executarExcluirGrupo()}
+              disabled={excluindo}
+            >
+              <Text style={styles.buttonText}>{excluindo ? 'Excluindo...' : 'Sim, excluir'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => setConfirmarExcluirVisivel(false)}
+              disabled={excluindo}
+            >
+              <Text style={styles.buttonText}>Cancelar</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal transparent visible={confirmarSairVisivel} animationType="fade" onRequestClose={() => setConfirmarSairVisivel(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => !saindo && setConfirmarSairVisivel(false)}>
+          <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>Sair do grupo?</Text>
+            <Text style={{ color: palette.textSecondary, marginBottom: 20, lineHeight: 22 }}>
+              Voce deixa de participar deste grupo no servidor.
+            </Text>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: '#FF3B30', marginBottom: 10 }]}
+              onPress={() => void executarSairDoGrupo()}
+              disabled={saindo}
+            >
+              <Text style={styles.buttonText}>{saindo ? 'Saindo...' : 'Sim, sair'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={() => setConfirmarSairVisivel(false)} disabled={saindo}>
+              <Text style={styles.buttonText}>Cancelar</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal transparent visible={editarVisivel} animationType="slide" onRequestClose={() => setEditarVisivel(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => !salvandoEdicao && setEditarVisivel(false)}>
+          <Pressable style={[styles.modalContainer, { maxHeight: '90%' }]} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Editar grupo</Text>
+              <TouchableOpacity onPress={() => !salvandoEdicao && setEditarVisivel(false)}>
+                <Feather name="x" size={24} color={palette.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={styles.label}>Imagem de capa</Text>
+              <TouchableOpacity style={styles.grupoCapaPreview} onPress={() => setMenuCapaVisivel(true)} disabled={salvandoEdicao}>
+                {imagemCapaEdicao ? (
+                  <Image source={{ uri: imagemCapaEdicao }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                ) : (
+                  <>
+                    <Feather name="image" size={32} color={palette.textMuted} />
+                    <Text style={{ color: palette.textMuted, marginTop: 8 }}>Toque para escolher uma capa</Text>
+                  </>
                 )}
+              </TouchableOpacity>
+              {imagemCapaEdicao && (
+                <TouchableOpacity
+                  style={{ alignSelf: 'flex-start', marginBottom: 12, marginTop: -4 }}
+                  onPress={() => setImagemCapaEdicao(null)}
+                  disabled={salvandoEdicao}
+                >
+                  <Text style={styles.linkText}>Remover capa</Text>
+                </TouchableOpacity>
+              )}
 
-                <Text style={styles.label}>Nome</Text>
-                <TextInput
-                    style={styles.input}
-                    value={nomeEdicao}
-                    onChangeText={setNomeEdicao}
-                    placeholder="Nome do grupo"
-                    editable={!salvandoEdicao}
-                />
-                <Text style={styles.label}>Descricao</Text>
-                <TextInput
-                    style={[styles.input, { height: 88, textAlignVertical: 'top' }]}
-                    value={descricaoEdicao}
-                    onChangeText={setDescricaoEdicao}
-                    placeholder="Descricao"
-                    multiline
-                    editable={!salvandoEdicao}
-                />
+              <Text style={styles.label}>Nome</Text>
+              <TextInput
+                style={styles.input}
+                value={nomeEdicao}
+                onChangeText={setNomeEdicao}
+                placeholder="Nome do grupo"
+                editable={!salvandoEdicao}
+              />
+              <Text style={styles.label}>Descricao</Text>
+              <TextInput
+                style={[styles.input, { height: 88, textAlignVertical: 'top' }]}
+                value={descricaoEdicao}
+                onChangeText={setDescricaoEdicao}
+                placeholder="Descricao"
+                multiline
+                editable={!salvandoEdicao}
+              />
 
-                <View style={styles.grupoRegrasBox}>
-                  <Text style={styles.grupoRegrasTitulo}>Regras de pontuacao</Text>
-                  <Text style={styles.label}>Pontos por check-in</Text>
-                  <TextInput
+              <View style={styles.grupoRegrasBox}>
+                <Text style={styles.grupoRegrasTitulo}>Regras de pontuacao</Text>
+                <Text style={styles.label}>Pontos por check-in</Text>
+                <TextInput
+                  style={styles.input}
+                  value={pontosPorCheckinEdicao}
+                  onChangeText={setPontosPorCheckinEdicao}
+                  placeholder="1"
+                  keyboardType="number-pad"
+                  editable={!salvandoEdicao}
+                />
+                <View style={styles.grupoSwitchRow}>
+                  <Text style={{ color: palette.text, fontWeight: '600', flex: 1 }}>Bonus por dias seguidos</Text>
+                  <TouchableOpacity
+                    onPress={() => !salvandoEdicao && setBonusSequenciaEdicao((v) => !v)}
+                    style={{
+                      backgroundColor: bonusSequenciaEdicao ? palette.accent : palette.switchOff,
+                      borderRadius: 14,
+                      width: 48,
+                      height: 28,
+                      justifyContent: 'center',
+                      paddingHorizontal: 4,
+                      opacity: salvandoEdicao ? 0.6 : 1,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: 10,
+                        backgroundColor: palette.switchKnob,
+                        alignSelf: bonusSequenciaEdicao ? 'flex-end' : 'flex-start',
+                      }}
+                    />
+                  </TouchableOpacity>
+                </View>
+                {bonusSequenciaEdicao ? (
+                  <>
+                    <Text style={styles.label}>Dias seguidos para ativar bonus</Text>
+                    <TextInput
                       style={styles.input}
-                      value={pontosPorCheckinEdicao}
-                      onChangeText={setPontosPorCheckinEdicao}
-                      placeholder="1"
+                      value={diasSequenciaEdicao}
+                      onChangeText={setDiasSequenciaEdicao}
+                      placeholder="3"
                       keyboardType="number-pad"
                       editable={!salvandoEdicao}
-                  />
-                  <View style={styles.grupoSwitchRow}>
-                    <Text style={{ color: '#333', fontWeight: '600', flex: 1 }}>Bonus por dias seguidos</Text>
-                    <TouchableOpacity
-                        onPress={() => !salvandoEdicao && setBonusSequenciaEdicao((v) => !v)}
-                        style={{
-                          backgroundColor: bonusSequenciaEdicao ? '#FF8C00' : '#CCC',
-                          borderRadius: 14,
-                          width: 48,
-                          height: 28,
-                          justifyContent: 'center',
-                          paddingHorizontal: 4,
-                          opacity: salvandoEdicao ? 0.6 : 1,
-                        }}
-                    >
-                      <View
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: 10,
-                            backgroundColor: '#FFF',
-                            alignSelf: bonusSequenciaEdicao ? 'flex-end' : 'flex-start',
-                          }}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                  {bonusSequenciaEdicao ? (
-                      <>
-                        <Text style={styles.label}>Dias seguidos para ativar bonus</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={diasSequenciaEdicao}
-                            onChangeText={setDiasSequenciaEdicao}
-                            placeholder="3"
-                            keyboardType="number-pad"
-                            editable={!salvandoEdicao}
-                        />
-                        <Text style={styles.label}>Multiplicador (ex: 2 = dobrar)</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={multiplicadorSequenciaEdicao}
-                            onChangeText={setMultiplicadorSequenciaEdicao}
-                            placeholder="2"
-                            keyboardType="decimal-pad"
-                            editable={!salvandoEdicao}
-                        />
-                        <Text style={{ color: '#666', fontSize: 12, marginTop: -8, marginBottom: 4 }}>
-                          Ex: 3 dias + multiplicador 2.0 = a partir do 3o dia, cada check-in vale o dobro.
-                        </Text>
-                      </>
-                  ) : (
-                      <Text style={{ color: '#666', fontSize: 12, marginBottom: 4 }}>
-                        Com o bonus desativado, cada check-in vale apenas os pontos base.
-                      </Text>
-                  )}
-                </View>
+                    />
+                    <Text style={styles.label}>Multiplicador (ex: 2 = dobrar)</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={multiplicadorSequenciaEdicao}
+                      onChangeText={setMultiplicadorSequenciaEdicao}
+                      placeholder="2"
+                      keyboardType="decimal-pad"
+                      editable={!salvandoEdicao}
+                    />
+                    <Text style={{ color: palette.textSecondary, fontSize: 12, marginTop: -8, marginBottom: 4 }}>
+                      Ex: 3 dias + multiplicador 2.0 = a partir do 3o dia, cada check-in vale o dobro.
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={{ color: palette.textSecondary, fontSize: 12, marginBottom: 4 }}>
+                    Com o bonus desativado, cada check-in vale apenas os pontos base.
+                  </Text>
+                )}
+              </View>
 
-                <TouchableOpacity style={styles.button} onPress={() => void salvarEdicaoGrupo()} disabled={salvandoEdicao}>
-                  <Text style={styles.buttonText}>{salvandoEdicao ? 'Salvando...' : 'Salvar'}</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            </Pressable>
+              <TouchableOpacity style={styles.button} onPress={() => void salvarEdicaoGrupo()} disabled={salvandoEdicao}>
+                <Text style={styles.buttonText}>{salvandoEdicao ? 'Salvando...' : 'Salvar'}</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </Pressable>
-        </Modal>
+        </Pressable>
+      </Modal>
 
-        <Modal transparent visible={menuCapaVisivel} animationType="fade" onRequestClose={() => setMenuCapaVisivel(false)}>
-          <Pressable style={styles.modalOverlay} onPress={() => setMenuCapaVisivel(false)}>
-            <Pressable style={[styles.modalContainer, { padding: 0, overflow: 'hidden' }]} onPress={(e) => e.stopPropagation()}>
-              <Text style={[styles.modalTitle, { padding: 16, paddingBottom: 8 }]}>Capa do grupo</Text>
-              <TouchableOpacity
-                  style={[styles.modalActionBtn, { borderBottomWidth: 1, borderBottomColor: '#EEE' }]}
-                  onPress={() => void escolherOpcaoCapa(tirarFotoCapa)}
-              >
-                <Feather name="camera" size={20} color="#0B2046" style={styles.modalActionIcon} />
-                <Text style={styles.modalActionText}>Tirar foto</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                  style={[styles.modalActionBtn, { borderBottomWidth: 1, borderBottomColor: '#EEE' }]}
-                  onPress={() => void escolherOpcaoCapa(escolherCapaDaGaleria)}
-              >
-                <Feather name="image" size={20} color="#0B2046" style={styles.modalActionIcon} />
-                <Text style={styles.modalActionText}>Escolher da galeria</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalActionBtn, { justifyContent: 'center' }]} onPress={() => setMenuCapaVisivel(false)}>
-                <Text style={[styles.modalActionText, { color: '#999' }]}>Cancelar</Text>
-              </TouchableOpacity>
-            </Pressable>
+      <Modal transparent visible={menuCapaVisivel} animationType="fade" onRequestClose={() => setMenuCapaVisivel(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setMenuCapaVisivel(false)}>
+          <Pressable style={[styles.modalContainer, { padding: 0, overflow: 'hidden' }]} onPress={(e) => e.stopPropagation()}>
+            <Text style={[styles.modalTitle, { padding: 16, paddingBottom: 8 }]}>Capa do grupo</Text>
+            <TouchableOpacity
+              style={[styles.modalActionBtn, { borderBottomWidth: 1, borderBottomColor: palette.border }]}
+              onPress={() => void escolherOpcaoCapa(tirarFotoCapa)}
+            >
+              <Feather name="camera" size={20} color={palette.accent} style={styles.modalActionIcon} />
+              <Text style={styles.modalActionText}>Tirar foto</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalActionBtn, { borderBottomWidth: 1, borderBottomColor: palette.border }]}
+              onPress={() => void escolherOpcaoCapa(escolherCapaDaGaleria)}
+            >
+              <Feather name="image" size={20} color={palette.accent} style={styles.modalActionIcon} />
+              <Text style={styles.modalActionText}>Escolher da galeria</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalActionBtn, { justifyContent: 'center' }]} onPress={() => setMenuCapaVisivel(false)}>
+              <Text style={[styles.modalActionText, { color: palette.textMuted }]}>Cancelar</Text>
+            </TouchableOpacity>
           </Pressable>
-        </Modal>
-      </View>
+        </Pressable>
+      </Modal>
+    </View>
   );
 }

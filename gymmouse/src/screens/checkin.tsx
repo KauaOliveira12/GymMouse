@@ -6,7 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location'; // <-- IMPORT DO GPS
 import MapWrapper from './MapWrapper';
 import { API_URL } from '../config/api';
-import { styles } from './styles';
+import { useTheme } from '../context/ThemeContext';
 
 // Banco temporario em memoria. A tela de Grupo le estes dados enquanto a API de check-in nao existir.
 export let POSTS_GLOBAIS: any[] = [];
@@ -18,6 +18,7 @@ const aguardarFechamentoModal = () =>
 export default function Checkin() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { styles, palette } = useTheme();
   const params = route.params ?? {};
   const grupoId = params.id != null ? String(params.id) : 'geral';
   const usuarioId = params.usuarioId != null ? String(params.usuarioId) : null;
@@ -194,7 +195,7 @@ export default function Checkin() {
       <View style={styles.homeContainer}>
         <View style={styles.grupoHeaderTop}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Feather name="arrow-left" size={24} color="#FFF" />
+            <Feather name="arrow-left" size={24} color={palette.headerText} />
           </TouchableOpacity>
           <Text style={styles.grupoHeaderTitle}>Fazer Check-in</Text>
           <View style={{ width: 24 }} />
@@ -205,14 +206,14 @@ export default function Checkin() {
           <TouchableOpacity
               style={{
                 height: 200,
-                backgroundColor: '#E0E0E0',
+                backgroundColor: palette.imagePlaceholder,
                 borderRadius: 12,
                 justifyContent: 'center',
                 alignItems: 'center',
                 marginBottom: 20,
                 borderStyle: 'dashed',
                 borderWidth: 2,
-                borderColor: '#CCC',
+                borderColor: palette.border,
                 overflow: 'hidden',
               }}
               onPress={handleSelecionarFoto}
@@ -221,8 +222,8 @@ export default function Checkin() {
                 <Image source={{ uri: imagem }} style={{ width: '100%', height: '100%' }} />
             ) : (
                 <>
-                  <Feather name="camera" size={40} color="#999" />
-                  <Text style={{ color: '#999', marginTop: 10 }}>Toque para adicionar uma foto</Text>
+                  <Feather name="camera" size={40} color={palette.textMuted} />
+                  <Text style={{ color: palette.textMuted, marginTop: 10 }}>Toque para adicionar uma foto</Text>
                 </>
             )}
           </TouchableOpacity>
@@ -231,6 +232,7 @@ export default function Checkin() {
           <TextInput
               style={styles.input}
               placeholder="Ex: Treino de Pernas"
+              placeholderTextColor={palette.textMuted}
               value={titulo}
               onChangeText={setTitulo}
           />
@@ -239,6 +241,7 @@ export default function Checkin() {
           <TextInput
               style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
               placeholder="Como foi o treino? O que voce fez?"
+              placeholderTextColor={palette.textMuted}
               value={descricao}
               onChangeText={setDescricao}
               multiline
@@ -248,12 +251,12 @@ export default function Checkin() {
           <Text style={styles.label}>Localização (Opcional)</Text>
           {!latitude ? (
               <TouchableOpacity
-                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF3E0', padding: 12, borderRadius: 8, marginBottom: 20 }}
+                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: palette.rankHighlight, padding: 12, borderRadius: 8, marginBottom: 20 }}
                   onPress={handleIncluirLocalizacao}
                   disabled={buscandoLocal}
               >
-                <Feather name="map-pin" size={20} color="#FF8C00" />
-                <Text style={{ marginLeft: 10, color: '#FF8C00', fontWeight: 'bold' }}>
+                <Feather name="map-pin" size={20} color={palette.accent} />
+                <Text style={{ marginLeft: 10, color: palette.accent, fontWeight: 'bold' }}>
                   {buscandoLocal ? 'Buscando localização...' : 'Incluir localização'}
                 </Text>
               </TouchableOpacity>
@@ -261,8 +264,8 @@ export default function Checkin() {
               <View style={{ marginBottom: 20 }}>
                 {nomeLocal && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                      <Feather name="map-pin" size={16} color="#FF8C00" />
-                      <Text style={{ marginLeft: 6, fontWeight: 'bold', color: '#666' }}>{nomeLocal}</Text>
+                      <Feather name="map-pin" size={16} color={palette.accent} />
+                      <Text style={{ marginLeft: 6, fontWeight: 'bold', color: palette.textSecondary }}>{nomeLocal}</Text>
                     </View>
                 )}
                 <View style={{ borderRadius: 12, overflow: 'hidden', height: 150 }}>
@@ -277,7 +280,7 @@ export default function Checkin() {
 
           <View
               style={{
-                backgroundColor: '#FFF3E0',
+                backgroundColor: palette.rankHighlight,
                 padding: 15,
                 borderRadius: 8,
                 marginBottom: 20,
@@ -285,10 +288,10 @@ export default function Checkin() {
                 alignItems: 'center',
               }}
           >
-            <Feather name="check-circle" size={24} color="#FF8C00" style={{ marginRight: 10 }} />
+            <Feather name="check-circle" size={24} color={palette.accent} style={{ marginRight: 10 }} />
             <View>
-              <Text style={{ fontWeight: 'bold', color: '#FF8C00', fontSize: 16 }}>Ganhe +1 Ponto</Text>
-              <Text style={{ color: '#FF8C00', fontSize: 12 }}>Faca check-in diario e suba no ranking.</Text>
+              <Text style={{ fontWeight: 'bold', color: palette.accent, fontSize: 16 }}>Ganhe +1 Ponto</Text>
+              <Text style={{ color: palette.accent, fontSize: 12 }}>Faca check-in diario e suba no ranking.</Text>
             </View>
           </View>
 
@@ -309,33 +312,33 @@ export default function Checkin() {
               onPress={() => setMenuFotoVisivel(false)}
           >
             <Pressable
-                style={{ backgroundColor: '#FFF', borderRadius: 12, padding: 20, width: '80%', maxWidth: 320 }}
+                style={{ backgroundColor: palette.surface, borderRadius: 12, padding: 20, width: '80%', maxWidth: 320 }}
                 onPress={(e) => e.stopPropagation()}
             >
-              <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8, color: '#333' }}>Foto do treino</Text>
-              <Text style={{ color: '#666', marginBottom: 16 }}>Como voce quer adicionar a foto?</Text>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8, color: palette.text }}>Foto do treino</Text>
+              <Text style={{ color: palette.textSecondary, marginBottom: 16 }}>Como voce quer adicionar a foto?</Text>
 
               <TouchableOpacity
                   style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12 }}
                   onPress={() => escolherOpcao(tirarFoto)}
               >
-                <Feather name="camera" size={22} color="#FF8C00" style={{ marginRight: 12 }} />
-                <Text style={{ fontSize: 16, color: '#333' }}>Tirar foto</Text>
+                <Feather name="camera" size={22} color={palette.accent} style={{ marginRight: 12 }} />
+                <Text style={{ fontSize: 16, color: palette.text }}>Tirar foto</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                   style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12 }}
                   onPress={() => escolherOpcao(escolherDaGaleria)}
               >
-                <Feather name="image" size={22} color="#FF8C00" style={{ marginRight: 12 }} />
-                <Text style={{ fontSize: 16, color: '#333' }}>Escolher da galeria</Text>
+                <Feather name="image" size={22} color={palette.accent} style={{ marginRight: 12 }} />
+                <Text style={{ fontSize: 16, color: palette.text }}>Escolher da galeria</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                   style={{ marginTop: 12, paddingVertical: 10, alignItems: 'center' }}
                   onPress={() => setMenuFotoVisivel(false)}
               >
-                <Text style={{ color: '#999', fontSize: 14 }}>Cancelar</Text>
+                <Text style={{ color: palette.textMuted, fontSize: 14 }}>Cancelar</Text>
               </TouchableOpacity>
             </Pressable>
           </Pressable>

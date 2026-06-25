@@ -13,7 +13,7 @@ import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { API_URL } from '../config/api';
 import { salvarUsuarioSessao } from '../services/sessao';
-import { styles } from './styles';
+import { useTheme } from '../context/ThemeContext';
 
 const lerResposta = async (resposta: Response) => {
   const texto = await resposta.text();
@@ -28,6 +28,7 @@ const lerResposta = async (resposta: Response) => {
 export default function Perfil() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { styles, palette } = useTheme();
   const usuarioInicial = route.params?.usuario ?? {};
   const usuarioId = usuarioInicial?.id != null ? String(usuarioInicial.id) : null;
 
@@ -146,7 +147,7 @@ export default function Perfil() {
   if (carregando) {
     return (
       <View style={[styles.homeContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#FF8C00" />
+        <ActivityIndicator size="large" color={palette.accent} />
       </View>
     );
   }
@@ -155,7 +156,7 @@ export default function Perfil() {
     <View style={styles.homeContainer}>
       <View style={[styles.grupoHeaderTop, { justifyContent: 'space-between' }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Feather name="chevron-left" size={28} color="#FFF" />
+          <Feather name="chevron-left" size={28} color={palette.headerText} />
         </TouchableOpacity>
         <Text style={[styles.grupoHeaderTitle, { flex: 1 }]}>Perfil</Text>
         <View style={{ width: 28 }} />
@@ -163,7 +164,7 @@ export default function Perfil() {
 
       <ScrollView
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#FF8C00']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[palette.accent]} />}
       >
         <View style={{ alignItems: 'center', marginBottom: 24 }}>
           <View
@@ -171,33 +172,33 @@ export default function Perfil() {
               width: 86,
               height: 86,
               borderRadius: 43,
-              backgroundColor: '#FF8C00',
+              backgroundColor: palette.accent,
               alignItems: 'center',
               justifyContent: 'center',
               marginBottom: 12,
             }}
           >
-            <Text style={{ color: '#FFF', fontSize: 28, fontWeight: 'bold' }}>{iniciais}</Text>
+            <Text style={{ color: palette.white, fontSize: 28, fontWeight: 'bold' }}>{iniciais}</Text>
           </View>
-          <Text style={{ color: '#0B2046', fontSize: 22, fontWeight: 'bold' }}>{nome || 'Usuario'}</Text>
-          <Text style={{ color: '#666', marginTop: 4 }}>{email}</Text>
+          <Text style={{ color: palette.title, fontSize: 22, fontWeight: 'bold' }}>{nome || 'Usuario'}</Text>
+          <Text style={{ color: palette.textSecondary, marginTop: 4 }}>{email}</Text>
         </View>
 
         <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
           <View style={[styles.rankCard, { flex: 1, marginHorizontal: 0, marginTop: 0, flexDirection: 'column' }]}>
-            <Feather name="award" size={22} color="#FF8C00" />
-            <Text style={{ color: '#0B2046', fontSize: 22, fontWeight: 'bold', marginTop: 8 }}>{pontos}</Text>
-            <Text style={{ color: '#666', fontSize: 12 }}>pontos</Text>
+            <Feather name="award" size={22} color={palette.accent} />
+            <Text style={{ color: palette.title, fontSize: 22, fontWeight: 'bold', marginTop: 8 }}>{pontos}</Text>
+            <Text style={{ color: palette.textSecondary, fontSize: 12 }}>pontos</Text>
           </View>
           <View style={[styles.rankCard, { flex: 1, marginHorizontal: 0, marginTop: 0, flexDirection: 'column' }]}>
-            <Feather name="users" size={22} color="#FF8C00" />
-            <Text style={{ color: '#0B2046', fontSize: 22, fontWeight: 'bold', marginTop: 8 }}>{quantidadeGrupos}</Text>
-            <Text style={{ color: '#666', fontSize: 12 }}>grupos</Text>
+            <Feather name="users" size={22} color={palette.accent} />
+            <Text style={{ color: palette.title, fontSize: 22, fontWeight: 'bold', marginTop: 8 }}>{quantidadeGrupos}</Text>
+            <Text style={{ color: palette.textSecondary, fontSize: 12 }}>grupos</Text>
           </View>
         </View>
 
         <Text style={styles.label}>Nome</Text>
-        <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Seu nome" />
+        <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Seu nome" placeholderTextColor={palette.textMuted} />
 
         <Text style={styles.label}>Email</Text>
         <TextInput
@@ -207,6 +208,7 @@ export default function Perfil() {
           placeholder="seu@email.com"
           autoCapitalize="none"
           keyboardType="email-address"
+          placeholderTextColor={palette.textMuted}
         />
 
         <Text style={styles.label}>Nova senha</Text>
@@ -216,6 +218,7 @@ export default function Perfil() {
           onChangeText={(texto) => setSenha(texto.replace(/\s/g, ''))}
           placeholder="Deixe vazio para manter a atual"
           secureTextEntry
+          placeholderTextColor={palette.textMuted}
         />
 
         <TouchableOpacity style={styles.button} onPress={handleSalvar} disabled={salvando}>
