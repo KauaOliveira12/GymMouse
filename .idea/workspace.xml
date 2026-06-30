@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="40ea6432-0db4-415f-8dee-36329de6c0b5" name="Changes" comment="sprint5">
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/Gymagora.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/.idea/Streaks.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/.vscode/extensions.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/.vscode/settings.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/App.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/app.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/assets/images/android-icon-background.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/assets/images/android-icon-foreground.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/assets/images/android-icon-monochrome.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/assets/images/favicon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/assets/images/icon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/assets/images/logoChama.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/assets/images/partial-react-logo.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/assets/images/react-logo.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/assets/images/react-logo@2x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/assets/images/react-logo@3x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/assets/images/splash-icon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/components/haptic-tab.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/components/hello-wave.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/components/parallax-scroll-view.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/components/themed-text.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/components/themed-view.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/components/ui/collapsible.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/components/ui/icon-symbol.ios.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/components/ui/icon-symbol.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/constants/theme.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/eslint.config.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/hooks/use-color-scheme.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/hooks/use-color-scheme.web.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/hooks/use-theme-color.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/package-lock.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/scripts/reset-project.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/config/api.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/context/ThemeContext.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/screens/Grupo.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/screens/MapWrapper.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/screens/MapWrapper.web.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/screens/cadastro.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/screens/chat.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/screens/checkin.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/screens/home.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/screens/login.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/screens/perfil.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/screens/styles.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/screens/teste.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/services/sessao.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/src/theme/palette.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gymmouse/tsconfig.json" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ComposerSettings">
+    <execution />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="63" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="sprint4" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="ROOT_SYNC" value="DONT_SYNC" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;KauaOliveira12&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/KauaOliveira12/GymMouse.git&quot;,
+    &quot;accountId&quot;: &quot;3e492805-f85e-42dc-b34a-5a69ef8c6921&quot;
+  }
+}</component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3D5SrJTAmH0oOFj8wdUMDGxnSEf" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Node.js.api.ts.executor": "Run",
+    "Node.js.sessao.ts.executor": "Run",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "sprint5",
+    "git.auto.fetch.suggestion.counter": "2",
+    "junie.onboarding.icon.badge.shown": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/kauas/OneDrive/Documentos/FACULDADE/Projeto Mobile/Front_Streaks",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "ml.llm.AcpAgentsConfigurable",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "C:\\Users\\kauas\\OneDrive\\Documentos\\FACULDADE\\Projeto Mobile\\Gymagora\\gymmouse\\node_modules\\typescript\\lib",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\kauas\OneDrive\Documentos\FACULDADE\Projeto Mobile\Gymagora\gymmouse\src\services" />
+      <recent name="C:\Users\kauas\OneDrive\Documentos\FACULDADE\Projeto Mobile\Gymagora\gymmouse\src\config" />
+      <recent name="C:\Users\kauas\OneDrive\Documentos\FACULDADE\Projeto Mobile\Gymagora\gymmouse\src\screens" />
+      <recent name="C:\Users\kauas\OneDrive\Documentos\FACULDADE\Projeto Mobile\Gymagora\gymmouse\components" />
+    </key>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="40ea6432-0db4-415f-8dee-36329de6c0b5" name="Changes" comment="" />
+      <created>1777570634927</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1777570634927</updated>
+      <workItem from="1777570636054" duration="14000" />
+      <workItem from="1777574330108" duration="4716000" />
+      <workItem from="1777588076300" duration="1663000" />
+      <workItem from="1778683090173" duration="598000" />
+      <workItem from="1778754380496" duration="46000" />
+      <workItem from="1778754542792" duration="1566000" />
+      <workItem from="1778756168829" duration="225000" />
+      <workItem from="1778756483948" duration="5211000" />
+      <workItem from="1778763762076" duration="1105000" />
+      <workItem from="1778764928074" duration="397000" />
+      <workItem from="1778765365920" duration="616000" />
+      <workItem from="1778766279442" duration="275000" />
+      <workItem from="1778797741113" duration="1150000" />
+      <workItem from="1780921817700" duration="3165000" />
+      <workItem from="1781130827977" duration="1425000" />
+      <workItem from="1781132568393" duration="1453000" />
+      <workItem from="1781140232798" duration="947000" />
+      <workItem from="1781141286462" duration="2033000" />
+      <workItem from="1781209897117" duration="810000" />
+      <workItem from="1781210789653" duration="172000" />
+      <workItem from="1781216783867" duration="3277000" />
+      <workItem from="1782395623177" duration="10099000" />
+      <workItem from="1782426152204" duration="2507000" />
+      <workItem from="1782782986029" duration="323000" />
+    </task>
+    <task id="LOCAL-00001" summary="atualizado">
+      <option name="closed" value="true" />
+      <created>1778683490025</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1778683490025</updated>
+    </task>
+    <task id="LOCAL-00002" summary="atualizado (Spprint3)">
+      <option name="closed" value="true" />
+      <created>1778765851767</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1778765851767</updated>
+    </task>
+    <task id="LOCAL-00003" summary="atualizado (Spprint3)">
+      <option name="closed" value="true" />
+      <created>1778765930992</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1778765930992</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Coloquei resposta de comentario (Sprint3)">
+      <option name="closed" value="true" />
+      <created>1780923683077</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1780923683077</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Pontuação grupo">
+      <option name="closed" value="true" />
+      <created>1781133278588</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1781133278588</updated>
+    </task>
+    <task id="LOCAL-00006" summary="sprint5">
+      <option name="closed" value="true" />
+      <created>1782396280519</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1782396280519</updated>
+    </task>
+    <task id="LOCAL-00007" summary="sprint5">
+      <option name="closed" value="true" />
+      <created>1782406690053</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1782406690053</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <ignored-roots>
+      <path value="$PROJECT_DIR$/gymmouse" />
+    </ignored-roots>
+    <MESSAGE value="atualizado" />
+    <MESSAGE value="atualizado (Spprint3)" />
+    <MESSAGE value="Coloquei resposta de comentario (Sprint3)" />
+    <MESSAGE value="Pontuação grupo" />
+    <MESSAGE value="sprint5" />
+    <option name="LAST_COMMIT_MESSAGE" value="sprint5" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>
